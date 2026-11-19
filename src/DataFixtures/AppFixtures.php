@@ -2,31 +2,56 @@
 
 namespace App\DataFixtures;
 
+use App\Entity\Character;
 use App\Entity\CharacterClass;
 use App\Entity\Clue;
 use App\Entity\Embeddable\Stats;
+use App\Entity\GameSave;
+use App\Entity\InventoryItem;
 use App\Entity\Item;
 use App\Entity\Quest;
+use App\Entity\QuestProgress;
 use App\Entity\QuestStep;
 use App\Enum\EquipmentSlot;
 use App\Enum\ItemCategory;
+use App\Entity\User;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 /**
  * Données de jeu du prototype : classes, objets, première quête et indices.
  * Les chiffres et les textes sont des valeurs provisoires, à équilibrer.
  *
- * Chargement : php bin/console doctrine:fixtures:load
+ * Crée aussi un compte de démonstration : demo@myth-of-eden.test / demo1234.
+ *
+ * Chargement : php bin/console doctrine:fixtures:load (vide la base avant !)
  */
 class AppFixtures extends Fixture
 {
+    public const DEMO_EMAIL = 'demo@myth-of-eden.test';
+    public const DEMO_PASSWORD = 'demo1234';
+
+    /** @var array<string, CharacterClass> */
+    private array $classes = [];
+    /** @var array<string, Item> */
+    private array $items = [];
+    private ?Quest $mainQuest = null;
+    /** @var array<string, Clue> */
+    private array $clues = [];
+
+    public function __construct(private readonly UserPasswordHasherInterface $passwordHasher)
+    {
+    }
+
     public function load(ObjectManager $manager): void
     {
         $this->loadClasses($manager);
         $this->loadItems($manager);
         $this->loadFirstQuest($manager);
+        $manager->flush();
 
+        $this->loadDemoAccount($manager);
         $manager->flush();
     }
 
@@ -57,6 +82,7 @@ class AppFixtures extends Fixture
                 ->setBaseStats($stats);
 
             $manager->persist($class);
+            $this->classes[$code] = $class;
         }
     }
 
@@ -91,6 +117,7 @@ class AppFixtures extends Fixture
 
         foreach ($items as $item) {
             $manager->persist($item);
+            $this->items[$item->getCode()] = $item;
         }
     }
 
@@ -111,6 +138,7 @@ class AppFixtures extends Fixture
             ->addStep(new QuestStep(5, 'activate_mechanism', 'Activer l\'ancien mécanisme grâce à la magie', 'ruin'));
 
         $manager->persist($quest);
+        $this->mainQuest = $quest;
 
         $clues = [
             (new Clue())->setCode('door_object')->setTitle('L\'objet devant la porte')
@@ -121,6 +149,44 @@ class AppFixtures extends Fixture
 
         foreach ($clues as $clue) {
             $manager->persist($clue->setQuest($quest));
+            $this->clues[$clue->getCode()] = $clue;
         }
+    }
+
+    /**
+     * Compte de démonstration avec une partie déjà avancée (pour tester ou présenter le projet).
+     * Les services ne sont pas utilisés ici pour éviter de relire la base pendant le chargement.
+     */
+    private function loadDemoAccount(ObjectManager $manager): void
+    {
+        $user = (new User())->setEmail(self::DEMO_EMAIL);
+        $user->setPassword($this->passwordHasher->hashPassword($user, self::DEMO_PASSWORD));
+        $manager->persist($user);
+
+        $character = (new Character())
+            ->setName('Lyra')
+            ->setAppearance(['body' => 'feminine', 'skinTone' => 'amber', 'hairColor' => 'silver'])
+            ->applyClass($this->classes['mage'])
+            ->setLevel(2)
+            ->setExperience(140);
+
+        $save = (new GameSave())
+            ->setSlot(1)
+            ->setCharacter($character)
+            ->moveTo('forest_path', 12.5, 0.0, -4.0, 90.0)
+            ->addPlayTime(4500);
+        $user->addGameSave($save);
+
+        $save->addInventoryItem((new InventoryItem($this->items['oak_staff']))->setEquippedSlot($this->items['oak_staff']->getEquipmentSlot()));
+        $save->addInventoryItem(new InventoryItem($this->items['apple'], 5));
+        $save->addInventoryItem(new InventoryItem($this->items['bandage'], 2));
+        $save->addInventoryItem(new InventoryItem($this->items['engraved_pendant']));
+
+        $progress = new QuestProgress($this->mainQuest);
+        $progress->advance(); // pendentif examiné : étape 2, interroger les habitants
+        $save->addQuestProgress($progress);
+        $save->discoverClue($this->clues['door_object']);
+
+        $manager->persist($save);
     }
 }

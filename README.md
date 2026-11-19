@@ -29,12 +29,15 @@ php bin/console doctrine:database:create
 php bin/console make:migration
 php bin/console doctrine:migrations:migrate
 
-# 4. Charger les données de jeu du prototype (classes, objets, première quête)
+# 4. Charger les données de jeu du prototype (classes, objets, première quête, compte de démo)
+#    Attention : cette commande vide la base avant de la remplir.
 php bin/console doctrine:fixtures:load
 
 # 5. Lancer le serveur
 symfony serve        # ou : php -S 127.0.0.1:8000 -t public
 ```
+
+**Compte de démonstration** (créé par les fixtures) : `demo@myth-of-eden.test` / `demo1234`, avec une partie « Lyra » (Mage niveau 2) déjà avancée.
 
 Pendant `composer install`, Composer peut proposer d'ajouter une configuration Docker venant des recettes : réponds selon ton besoin (« no » si tu utilises WAMP/XAMPP/Laragon).
 
