@@ -1,0 +1,45 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Supprimer {{ save.displayName }} · Myth of Eden{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+
+{% block body %}
+    <section class="join join--page">
+        {{ include('partials/_hero_scene.html.twig', {image: 'camp.jpg', position: 'center 72%'}) }}
+        <div class="join__shade"></div>
+        <div class="join__panel join__panel--danger">
+            <p class="eyebrow eyebrow--danger">Action définitive</p>
+            <h1 class="join__title">Supprimer la partie</h1>
+
+            <div class="delete-target accent--{{ save.character.characterClass.code }}">
+                {{ include('partials/_portrait.html.twig', {appearance: save.character.appearance, class_code: save.character.characterClass.code, size: 72}) }}
+                <div>
+                    <strong>{{ save.displayName }}</strong>
+                    <span>{{ save.character.characterClass.name }} · niveau {{ save.character.level }} · emplacement {{ save.slot }}</span>
+                </div>
+            </div>
+
+            <p class="delete-warning">
+                Le personnage, son inventaire, ses quêtes et ses indices seront effacés.
+                <strong>Cette action est irréversible.</strong>
+            </p>
+
+            {% if error %}
+                <p class="flash flash--error">{{ error }}</p>
+            {% endif %}
+
+            <form method="post" class="form">
+                <div>
+                    <label for="confirm_name">Pour confirmer, tape le nom du personnage : <b>{{ save.displayName }}</b></label>
+                    <input type="text" id="confirm_name" name="confirm_name" autocomplete="off" required autofocus>
+                </div>
+                <input type="hidden" name="_token" value="{{ csrf_token('delete-save-' ~ save.id) }}">
+
+                <div class="form-actions form-actions--split">
+                    <a class="btn btn--ghost" href="{{ path('app_game_save_show', {id: save.id}) }}">Annuler</a>
+                    <button type="submit" class="btn btn--danger">Supprimer définitivement</button>
+                </div>
+            </form>
+        </div>
+    </section>
+{% endblock %}

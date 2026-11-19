@@ -1,0 +1,171 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ save.displayName }} · Myth of Eden{% endblock %}
+{% block body_class %}page-inner{% endblock %}
+
+{% set class = character.characterClass %}
+
+{% block body %}
+    <section class="dash-top">
+        <div class="container">
+            {{ include('partials/_breadcrumb.html.twig', {items: [
+                {label: 'Mes parties', url: path('app_game_save_index')},
+                {label: save.displayName},
+            ]}) }}
+        </div>
+    </section>
+
+    <section class="section section--dash">
+        <div class="container">
+            {# ----- En-tête de page ----- #}
+            <header class="dash-head">
+                <div class="dash-head__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="38" height="38" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 L20 7 V12 C20 16.5 16.5 20 12 21 C7.5 20 4 16.5 4 12 V7 Z"/><path d="M12 8 V16 M8.5 11.5 H15.5"/></svg>
+                </div>
+                <div>
+                    <h1 class="dash-head__title">Ma partie</h1>
+                    <p class="dash-head__subtitle">Fiche du personnage · emplacement {{ save.slot }}</p>
+                </div>
+                <a class="dash-head__aside" href="{{ path('app_game_save_delete', {id: save.id}) }}">
+                    <span class="dash-head__aside-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7 H20 M9 7 V4 H15 V7 M6 7 L7 20 H17 L18 7 M10 11 V16 M14 11 V16"/></svg>
+                    </span>
+                    <span>Supprimer cette partie</span>
+                </a>
+            </header>
+
+            {# ----- Bloc principal ----- #}
+            <div class="hero-card accent--{{ class.code }}">
+                <div class="hero-card__identity">
+                    <div class="hero-card__portrait">
+                        {{ include('partials/_portrait.html.twig', {appearance: character.appearance, class_code: class.code, size: 200}) }}
+                        <span class="hero-card__level" title="Niveau">{{ character.level }}</span>
+                    </div>
+                    <div class="hero-card__info">
+                        <h2 class="hero-card__name">{{ character.name }}</h2>
+                        <p class="hero-card__meta">
+                            <span class="class-pill">{{ class.name }}</span>
+                            <span>Niveau {{ character.level }}</span>
+                        </p>
+                        <p class="hero-card__zone">{{ summary.zoneLabel }}</p>
+                        <a class="btn btn--primary btn--block" href="{{ path('app_game_save_index') }}">Changer de partie</a>
+                    </div>
+                </div>
+
+                <div class="hero-card__progress">
+                    <div class="big-number">
+                        <strong>{{ character.experience }}</strong>
+                        <span>/ {{ character.experienceForNextLevel }} XP</span>
+                    </div>
+                    <div class="progress" role="progressbar" aria-valuenow="{{ character.levelProgressPercent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression vers le niveau suivant">
+                        <span style="width: {{ character.levelProgressPercent }}%"></span>
+                    </div>
+                    <p class="hero-card__small">Niveau {{ character.level + 1 }} à {{ character.experienceForNextLevel }} XP</p>
+
+                    <div class="big-number big-number--health">
+                        <strong>{{ character.currentHealth }}</strong>
+                        <span>/ {{ character.stats.health }} PV</span>
+                    </div>
+
+                    <button class="btn btn--violet btn--glow btn--block" type="button" disabled title="Le jeu 3D arrive à une prochaine étape">Continuer l'aventure</button>
+                </div>
+
+                <dl class="hero-card__facts">
+                    <div>
+                        <dt>Dernière sauvegarde</dt>
+                        <dd>{{ save.updatedAt|date('d/m/Y à H:i') }}</dd>
+                    </div>
+                    <div>
+                        <dt>Temps de jeu</dt>
+                        <dd>{{ (save.playTimeSeconds / 3600)|round(0, 'floor') }} h {{ ((save.playTimeSeconds % 3600) / 60)|round(0, 'floor') }} min</dd>
+                    </div>
+                    <div>
+                        <dt>Partie créée le</dt>
+                        <dd>{{ save.createdAt|date('d/m/Y') }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            {# ----- Colonnes de détails ----- #}
+            <div class="dash-columns">
+                <section class="dash-col">
+                    <h2>Caractéristiques</h2>
+                    {% if character.unspentStatPoints > 0 %}
+                        <p class="dash-note">{{ character.unspentStatPoints }} point(s) à répartir</p>
+                    {% endif %}
+                    <dl class="dash-list">
+                        {% for stat in summary.stats %}
+                            <div>
+                                <dt>{{ stat.label }}</dt>
+                                <dd>
+                                    {{ stat.total }}
+                                    {% if stat.bonus > 0 %}<small class="bonus">+{{ stat.bonus }}</small>{% endif %}
+                                </dd>
+                            </div>
+                        {% endfor %}
+                    </dl>
+                </section>
+
+                <section class="dash-col">
+                    <h2>Équipement</h2>
+                    <ul class="slot-list">
+                        {% for entry in summary.equipment %}
+                            <li class="{{ entry.item ? 'is-filled' }}">
+                                <span class="slot-list__label">{{ entry.slot.label }}</span>
+                                <span class="slot-list__item">{{ entry.item ? entry.item.item.name : '—' }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </section>
+
+                <section class="dash-col">
+                    <h2>Sac</h2>
+                    {% if summary.bag is empty %}
+                        <p class="dash-empty">Ton sac est vide.</p>
+                    {% else %}
+                        <ul class="bag-list">
+                            {% for entry in summary.bag %}
+                                <li>
+                                    <span>
+                                        <b>{{ entry.item.name }}</b>
+                                        <small>{{ entry.item.category.label }}</small>
+                                    </span>
+                                    <span class="qty">×{{ entry.quantity }}</span>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </section>
+
+                <section class="dash-col">
+                    <h2>Journal</h2>
+                    {% for progress in summary.quests %}
+                        <article class="quest {{ progress.completed ? 'quest--done' }}">
+                            <p class="quest__type">{{ progress.quest.main ? 'Quête principale' : 'Quête secondaire' }} · {{ progress.status.label }}</p>
+                            <h3>{{ progress.quest.title }}</h3>
+                            {% if progress.currentStep %}
+                                <p class="quest__objective">
+                                    <span aria-hidden="true">➤</span> {{ progress.currentStep.objective }}
+                                </p>
+                                <p class="quest__step">Étape {{ progress.currentStep.position }} / {{ progress.quest.steps|length }}</p>
+                            {% endif %}
+                        </article>
+                    {% else %}
+                        <p class="dash-empty">Aucune quête pour l'instant.</p>
+                    {% endfor %}
+
+                    <h3 class="dash-subtitle">Indices découverts</h3>
+                    {% if save.discoveredClues is empty %}
+                        <p class="dash-empty">Aucun indice pour l'instant.</p>
+                    {% else %}
+                        <ul class="clue-list">
+                            {% for clue in save.discoveredClues %}
+                                <li><b>{{ clue.title }}</b><span>{{ clue.description }}</span></li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </section>
+            </div>
+        </div>
+    </section>
+{% endblock %}

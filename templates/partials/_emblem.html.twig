@@ -1,0 +1,8 @@
+{#
+    Emblème de Myth of Eden (public/images/logo.png, détouré en PNG transparent).
+    Paramètre facultatif : size (taille affichée en pixels, 40 par défaut).
+    L'ancien emblème dessiné en SVG est gardé dans _emblem_svg.html.twig.
+#}
+{% set size = size|default(40) %}
+<img class="emblem" src="{{ asset(size > 48 ? 'images/logo-256.png' : 'images/logo-96.png') }}"
+     width="{{ size }}" height="{{ size }}" alt="" aria-hidden="true" decoding="async">

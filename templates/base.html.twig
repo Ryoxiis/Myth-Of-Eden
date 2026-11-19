@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#15130f">
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-96.png') }}">
+        <link rel="apple-touch-icon" href="{{ asset('apple-touch-icon.png') }}">
+        <title>{% block title %}Myth of Eden{% endblock %}</title>
+        <script>
+            // Indique que le JavaScript est actif (animations) et si l'on arrive par le portail de l'intro.
+            document.documentElement.classList.add('js');
+            try {
+                if (sessionStorage.getItem('portal-entered')) {
+                    document.documentElement.classList.add('from-portal');
+                    sessionStorage.removeItem('portal-entered');
+                    // Bloque l'élan du défilement le temps que le flash se dissipe.
+                    document.documentElement.style.overflow = 'hidden';
+                    window.scrollTo(0, 0);
+                    setTimeout(function () { document.documentElement.style.overflow = ''; }, 1200);
+                }
+            } catch (e) {}
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Ubuntu:wght@300;400;500;700&display=swap">
+        <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+        {% block stylesheets %}{% endblock %}
+        <script src="{{ asset('js/app.js') }}" defer></script>
+        {% block javascripts %}{% endblock %}
+    </head>
+    <body class="{% block body_class %}{% endblock %}">
+        {% block header %}
+        <header class="site-header" data-header>
+            <div class="site-header__inner">
+                <div class="site-header__left">
+                    <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="main-nav" data-menu-toggle>
+                        <span class="menu-toggle__bars" aria-hidden="true"></span>
+                        <span>Menu</span>
+                    </button>
+                    <nav class="main-nav" id="main-nav" data-menu>
+                        <a href="{{ path('app_discover') }}#actualites">Actualités</a>
+                        <a href="{{ path('app_discover') }}#classes">Classes</a>
+                        <a href="{{ path('app_discover') }}#faq">FAQ</a>
+                        {% if app.user %}
+                            <a class="main-nav__mobile-only" href="{{ path('app_game_save_index') }}">Mes parties</a>
+                            <a class="main-nav__mobile-only" href="{{ logout_path() }}">Déconnexion</a>
+                        {% else %}
+                            <a class="main-nav__mobile-only" href="{{ path('app_login') }}">Connexion</a>
+                        {% endif %}
+                    </nav>
+                </div>
+
+                <a class="brand" href="{{ path('app_discover') }}" aria-label="Myth of Eden, découvrir le jeu">
+                    {{ include('partials/_emblem.html.twig', {size: 34}) }}
+                    <span>Myth of Eden</span>
+                </a>
+
+                <div class="site-header__right">
+                    {% if app.user %}
+                        <span class="account-chip" title="{{ app.user.userIdentifier }}">{{ app.user.userIdentifier|first|upper }}</span>
+                        <a class="header-link" href="{{ logout_path() }}">Déconnexion</a>
+                        <a class="btn btn--gold-outline" href="{{ path('app_game_save_index') }}">Mes parties</a>
+                    {% else %}
+                        <a class="header-link" href="{{ path('app_login') }}">Connexion</a>
+                        <a class="btn btn--gold-outline" href="{{ path('app_register') }}">Rejoindre</a>
+                    {% endif %}
+                </div>
+            </div>
+        </header>
+        {% endblock %}
+
+        <main class="site-main">
+            {% set flashes = app.flashes %}
+            {% if flashes is not empty %}
+                <div class="flash-stack">
+                    {% for type, messages in flashes %}
+                        {% for message in messages %}
+                            <p class="flash flash--{{ type }}">{{ message }}</p>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            {% block body %}{% endblock %}
+        </main>
+
+        {% block footer %}
+        <footer class="site-footer">
+            <div class="container site-footer__inner">
+                <a class="brand brand--footer" href="{{ path('app_discover') }}">
+                    {{ include('partials/_emblem.html.twig', {size: 42}) }}
+                    <span>Myth of Eden</span>
+                </a>
+                <nav class="site-footer__links">
+                    <a href="{{ path('app_discover') }}#actualites">Actualités</a>
+                    <a href="{{ path('app_discover') }}#classes">Classes</a>
+                    <a href="{{ path('app_discover') }}#faq">FAQ</a>
+                    {% if app.user %}
+                        <a href="{{ path('app_game_save_index') }}">Mes parties</a>
+                    {% else %}
+                        <a href="{{ path('app_register') }}">Créer un compte</a>
+                    {% endif %}
+                </nav>
+                <p class="site-footer__note">Projet de cours Symfony · Prototype {{ 'now'|date('Y') }}</p>
+            </div>
+        </footer>
+        {% endblock %}
+    </body>
+</html>

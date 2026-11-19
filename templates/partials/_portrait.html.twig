@@ -1,0 +1,40 @@
+{#
+    Portrait stylisé d'un personnage, dessiné d'après son apparence.
+    Paramètres : appearance (tableau body/skinTone/hairColor), class_code, size (px, 200 par défaut).
+    À remplacer plus tard par un vrai portrait (rendu 3D ou illustration).
+#}
+{% set skins = {porcelain: '#f1d3c2', sand: '#d9a982', amber: '#a8724f', umber: '#6e4a34'} %}
+{% set hairs = {black: '#1d1b1a', brown: '#5a3a22', auburn: '#8c3b1f', blond: '#d6b46a', silver: '#c9ccd1'} %}
+{% set cloaks = {scout: '#3f6b45', fighter: '#7a3b2a', traveler: '#7a5a24', mage: '#4b2f80'} %}
+{% set skin = skins[appearance.skinTone ?? 'sand'] ?? '#d9a982' %}
+{% set hair = hairs[appearance.hairColor ?? 'brown'] ?? '#5a3a22' %}
+{% set cloak = cloaks[class_code] ?? '#2f4152' %}
+{% set feminine = (appearance.body ?? 'feminine') == 'feminine' %}
+<svg class="portrait" width="{{ size|default(200) }}" height="{{ size|default(200) }}" viewBox="0 0 200 200" aria-hidden="true" focusable="false">
+    <defs>
+        <radialGradient id="portrait-bg-{{ class_code }}" cx="0.5" cy="0.35" r="0.75">
+            <stop offset="0" stop-color="#2d4a5a"/>
+            <stop offset="1" stop-color="#101a23"/>
+        </radialGradient>
+    </defs>
+    <circle cx="100" cy="100" r="100" fill="url(#portrait-bg-{{ class_code }})"/>
+    <circle cx="100" cy="72" r="46" fill="#7fe3d4" opacity="0.08"/>
+    {# cheveux longs à l'arrière #}
+    {% if feminine %}
+        <path d="M58 86 Q56 140 70 158 L130 158 Q144 140 142 86 Q100 40 58 86 Z" fill="{{ hair }}"/>
+    {% endif %}
+    {# épaules et cape #}
+    <path d="M30 200 Q34 150 70 138 L100 150 L130 138 Q166 150 170 200 Z" fill="{{ cloak }}"/>
+    <path d="M70 138 L100 176 L130 138 L118 134 L100 156 L82 134 Z" fill="#000" opacity="0.25"/>
+    {# cou et visage #}
+    <rect x="88" y="112" width="24" height="28" rx="8" fill="{{ skin }}"/>
+    <ellipse cx="100" cy="90" rx="32" ry="38" fill="{{ skin }}"/>
+    {# cheveux sur le dessus #}
+    {% if feminine %}
+        <path d="M66 88 Q66 46 100 46 Q134 46 134 88 Q122 66 100 64 Q80 66 66 88 Z" fill="{{ hair }}"/>
+    {% else %}
+        <path d="M68 82 Q66 48 100 48 Q134 48 132 82 Q124 64 100 62 Q78 64 68 82 Z" fill="{{ hair }}"/>
+    {% endif %}
+    {# fermoir de cape doré #}
+    <circle cx="100" cy="150" r="6" fill="#cc9933" stroke="#f1d28a" stroke-width="1.5"/>
+</svg>

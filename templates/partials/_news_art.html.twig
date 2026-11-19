@@ -1,0 +1,21 @@
+{# Illustration d'une carte d'actualité selon son thème : forest, village, magic, ruin. #}
+<div class="news-art news-art--{{ theme }}" aria-hidden="true">
+    <svg viewBox="0 0 120 80" preserveAspectRatio="xMidYMid meet">
+        <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            {% if theme == 'forest' %}
+                <circle cx="60" cy="40" r="10" fill="currentColor" opacity="0.35" stroke="none"/>
+                <path d="M30 66 L42 34 L54 66 Z M66 66 L78 30 L90 66 Z M52 66 L60 46 L68 66 Z"/>
+            {% elseif theme == 'village' %}
+                <path d="M30 66 V44 L46 32 L62 44 V66 Z M40 66 V54 H52 V66 M66 66 V50 L78 40 L90 50 V66 Z"/>
+                <path d="M78 40 V30 M76 28 Q78 24 80 28" opacity="0.7"/>
+            {% elseif theme == 'magic' %}
+                <path d="M46 68 L70 22"/>
+                <circle cx="72" cy="18" r="6" fill="currentColor" opacity="0.35"/>
+                <path d="M84 30 l3 -6 l3 6 l-3 6 Z M38 32 l2 -4 l2 4 l-2 4 Z M86 52 l2 -4 l2 4 l-2 4 Z"/>
+            {% else %}
+                <path d="M36 66 V40 Q60 18 84 40 V66 H74 V44 Q60 32 46 44 V66 Z"/>
+                <path d="M28 66 H92"/>
+            {% endif %}
+        </g>
+    </svg>
+</div>

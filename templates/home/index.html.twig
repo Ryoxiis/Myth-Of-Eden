@@ -1,0 +1,276 @@
+{% extends 'base.html.twig' %}
+
+{% block body_class %}page-home{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('vendor/lenis/lenis.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/home.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    <script src="{{ asset('vendor/gsap/gsap.min.js') }}" defer></script>
+    <script src="{{ asset('vendor/gsap/ScrollTrigger.min.js') }}" defer></script>
+    <script src="{{ asset('vendor/lenis/lenis.min.js') }}" defer></script>
+    <script src="{{ asset('js/home.js') }}" defer></script>
+    <script type="module" src="{{ asset('js/portal.bundle.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+    {# ---------- Écran de chargement ---------- #}
+    <div class="loader" data-loader aria-hidden="true">
+        <div class="loader__inner">
+            {{ include('partials/_emblem.html.twig', {size: 96}) }}
+            <p class="loader__title">Myth of Eden</p>
+            <span class="loader__bar"><span></span></span>
+        </div>
+    </div>
+
+    {# ---------- Bannière : le portail 3D ---------- #}
+    <section class="portal-hero portal-hero--static" data-portal-host data-hero>
+        <div class="portal-hero__sticky">
+            <div class="portal-hero__bg" data-parallax>
+                {{ include('partials/_hero_scene.html.twig') }}
+            </div>
+            <canvas class="portal-hero__canvas" data-portal-canvas data-portal-dive="0" data-portal-offset="2.2" aria-hidden="true"></canvas>
+            <div class="portal-hero__shade"></div>
+            <div class="grain" aria-hidden="true"></div>
+
+            <div class="portal-hero__content" data-hero-content>
+                <div class="portal-hero__main">
+                    <p class="portal-hero__kicker" data-hero-in style="--d: 0">
+                        <span class="dot"></span> Prototype · Chapitre I
+                    </p>
+
+                    <h1 class="portal-hero__title" aria-label="Myth of Eden">
+                        {% for word in ['Myth', 'of', 'Eden'] %}
+                            <span class="word word--{{ loop.index }}" aria-hidden="true">
+                                {%- for letter in word|split('') -%}
+                                    <span class="letter" style="--i: {{ loop.parent.loop.index0 * 5 + loop.index0 }}">{{ letter }}</span>
+                                {%- endfor -%}
+                            </span>
+                        {% endfor %}
+                    </h1>
+                    <p class="portal-hero__subtitle" data-hero-in style="--d: 5">La lumière dans la forêt</p>
+
+                    <p class="portal-hero__pitch" data-hero-in style="--d: 6">
+                        De retour au village, tu trouves devant ta porte un objet laissé par ton ancien compagnon disparu.
+                        Une lueur s'éveille au cœur des bois, là où dort une ancienne légende.
+                    </p>
+
+                    <div class="portal-hero__actions" data-hero-in style="--d: 7">
+                        {% if app.user %}
+                            <a class="cta cta--primary" data-magnetic href="{{ path('app_game_save_index') }}">
+                                <span>Reprendre l'aventure</span>
+                            </a>
+                        {% else %}
+                            <a class="cta cta--primary" data-magnetic href="{{ path('app_register') }}">
+                                <span>Jouer gratuitement</span>
+                            </a>
+                        {% endif %}
+                        <a class="cta cta--ghost" href="#monde"><span>Découvrir l'histoire</span></a>
+                    </div>
+                </div>
+
+                <div class="portal-hero__bar" data-hero-in style="--d: 8">
+                    <ul class="portal-hero__facts">
+                        <li><strong>{{ classes|length ?: 4 }}</strong> classes</li>
+                        <li><strong>3</strong> emplacements</li>
+                        <li><strong>3D</strong> dans le navigateur</li>
+                    </ul>
+                    <a class="portal-hero__scroll" href="#monde">
+                        <span>Défile pour découvrir</span>
+                        <i aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    {# ---------- Bandeau défilant ---------- #}
+    <div class="marquee" aria-hidden="true">
+        <div class="marquee__track">
+            {% for i in 1..2 %}
+                <span>Exploration</span><i>✦</i><span>Enquête</span><i>✦</i><span>Magie interdite</span><i>✦</i>
+                <span>Survie</span><i>✦</i><span>Dialogues</span><i>✦</i><span>Secrets</span><i>✦</i><span>Légende</span><i>✦</i>
+            {% endfor %}
+        </div>
+    </div>
+
+    {# ---------- Le monde : récit en trois chapitres ---------- #}
+    <section class="world" id="monde" data-world>
+        <header class="world__intro container">
+            <p class="eyebrow" data-reveal>L'histoire</p>
+            <h2 class="display" data-reveal>Le monde<br><em>de Myth of Eden</em></h2>
+        </header>
+
+        <div class="world__pin" data-world-pin>
+            <div class="world__backdrops" aria-hidden="true">
+                {% for chapter in chapters %}
+                    <img class="world__backdrop" src="{{ asset('images/' ~ chapter.image) }}" alt="" loading="lazy"
+                         style="object-position: {{ chapter.position }}" data-world-bg>
+                {% endfor %}
+                <div class="world__veil"></div>
+            </div>
+            <div class="world__track" data-world-track>
+                {% for chapter in chapters %}
+                    <article class="chapter">
+                        <div class="chapter__media">
+                            <img src="{{ asset('images/' ~ chapter.image) }}" alt="" loading="lazy" style="object-position: {{ chapter.position }}">
+                        </div>
+                        <div class="chapter__body">
+                            <span class="chapter__number">{{ chapter.number }}</span>
+                            <p class="eyebrow eyebrow--gold">{{ chapter.kicker }}</p>
+                            <h3>{{ chapter.title }}</h3>
+                            <p>{{ chapter.text }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+            <div class="world__progress" aria-hidden="true"><span data-world-progress></span></div>
+        </div>
+    </section>
+
+    {# ---------- Classes : sélecteur interactif ---------- #}
+    <section class="classes" id="classes">
+        <div class="container">
+            <header class="section-title">
+                <p class="eyebrow" data-reveal>Choisis ta voie</p>
+                <h2 class="display" data-reveal>Quatre classes,<br><em>une seule légende</em></h2>
+            </header>
+
+            {% if classes is empty %}
+                <p class="notice">Aucune classe en base. Charge les données de départ avec <code>php bin/console doctrine:fixtures:load</code>.</p>
+            {% else %}
+                <div class="class-select" data-class-select data-reveal>
+                    <div class="class-select__tabs" role="tablist" aria-label="Classes">
+                        {% for class in classes %}
+                            <button class="class-tab accent--{{ class.code }}" type="button" role="tab"
+                                    id="tab-{{ class.code }}" aria-controls="panel-{{ class.code }}"
+                                    aria-selected="{{ loop.first ? 'true' : 'false' }}" data-class-tab="{{ class.code }}">
+                                <span class="class-tab__index">0{{ loop.index }}</span>
+                                {{ include('partials/_class_portrait.html.twig', {class: class, extra_class: 'class-tab__avatar'}) }}
+                                <span class="class-tab__name">{{ class.name }}</span>
+                            </button>
+                        {% endfor %}
+                    </div>
+
+                    <div class="class-select__panels">
+                        {% for class in classes %}
+                            {% set s = class.baseStats %}
+                            <article class="class-panel accent--{{ class.code }} {{ loop.first ? 'is-active' }}" role="tabpanel"
+                                     id="panel-{{ class.code }}" aria-labelledby="tab-{{ class.code }}" data-class-panel="{{ class.code }}">
+                                <div class="class-panel__sigil">
+                                    <span class="class-panel__ring" aria-hidden="true"></span>
+                                    {{ include('partials/_class_portrait.html.twig', {class: class, extra_class: 'class-panel__portrait'}) }}
+                                </div>
+                                <div class="class-panel__body">
+                                    <h3>{{ class.name }}</h3>
+                                    <p class="class-panel__desc">{{ class.description }}</p>
+                                    <ul class="class-panel__perks">
+                                        {% for advantage in class.advantages %}
+                                            <li>{{ advantage }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                    <dl class="stat-bars">
+                                        {% for stat in [
+                                            {label: 'Santé', value: s.health, max: 150},
+                                            {label: 'Endurance', value: s.stamina, max: 150},
+                                            {label: 'Force', value: s.strength, max: 10},
+                                            {label: 'Agilité', value: s.agility, max: 10},
+                                            {label: 'Discrétion', value: s.stealth, max: 10},
+                                            {label: 'Magie', value: s.magicMastery, max: 10},
+                                            {label: 'Pistage', value: s.tracking, max: 10},
+                                        ] %}
+                                            <div>
+                                                <dt>{{ stat.label }}</dt>
+                                                <dd>
+                                                    <span class="stat-bars__bar"><span style="--v: {{ (stat.value / stat.max * 100)|round }}%"></span></span>
+                                                    <b>{{ stat.value }}</b>
+                                                </dd>
+                                            </div>
+                                        {% endfor %}
+                                    </dl>
+                                </div>
+                            </article>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </section>
+
+    {# ---------- Actualités : grille bento ---------- #}
+    <section class="news" id="actualites">
+        <div class="container">
+            <header class="section-title section-title--row">
+                <div>
+                    <p class="eyebrow" data-reveal>Journal de développement</p>
+                    <h2 class="display" data-reveal>Dernières<br><em>actualités</em></h2>
+                </div>
+            </header>
+
+            <div class="bento">
+                {% for item in news %}
+                    <article class="bento__tile {{ (item.featured ?? false) ? 'bento__tile--featured' }}" data-reveal data-tilt>
+                        {{ include('partials/_news_art.html.twig', {theme: item.theme}) }}
+                        {% if item.image is defined %}
+                            <img class="bento__img" src="{{ asset('images/' ~ item.image) }}" alt="" loading="lazy" decoding="async"
+                                 style="object-position: {{ item.position ?? 'center 35%' }}" onerror="this.remove()">
+                        {% endif %}
+                        <div class="bento__body">
+                            <p class="bento__meta"><span class="tag">{{ item.tag }}</span><span>{{ item.date|date('d/m/Y') }}</span></p>
+                            <h3>{{ item.title }}</h3>
+                            <p>{{ item.summary }}</p>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# ---------- Inscription ---------- #}
+    {% if registrationForm %}
+        <section class="join join--home" id="rejoindre">
+            {{ include('partials/_hero_scene.html.twig', {image: 'village.jpg', position: 'center 70%'}) }}
+            <div class="join__shade"></div>
+            <div class="grain" aria-hidden="true"></div>
+            <div class="join__layout container">
+                <div class="join__pitch" data-reveal>
+                    <p class="eyebrow eyebrow--gold">Nouveau ici ?</p>
+                    <h2 class="display">Ton aventure<br><em>commence ce soir</em></h2>
+                    <ul class="join__points">
+                        <li>Gratuit, directement dans ton navigateur</li>
+                        <li>Trois emplacements de partie</li>
+                        <li>Sauvegarde automatique de ta progression</li>
+                    </ul>
+                </div>
+                <div class="join__panel glass" data-reveal>
+                    <h3 class="join__title">Jouer gratuitement</h3>
+                    {{ include('registration/_form.html.twig', {form: registrationForm}) }}
+                    <p class="form-footer">Déjà un compte ? <a href="{{ path('app_login') }}">Se connecter</a></p>
+                </div>
+            </div>
+        </section>
+    {% endif %}
+
+    {# ---------- FAQ ---------- #}
+    <section class="faq-section" id="faq">
+        <div class="container faq-section__layout">
+            <header class="faq-section__head">
+                <p class="eyebrow" data-reveal>Aide</p>
+                <h2 class="display" data-reveal>Questions<br><em>fréquentes</em></h2>
+            </header>
+            <div class="faq" data-reveal>
+                {% for entry in faq %}
+                    <details class="faq__item" {{ loop.first ? 'open' }}>
+                        <summary>{{ entry.question }}</summary>
+                        <p>{{ entry.answer }}</p>
+                    </details>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <div class="giant-wordmark" aria-hidden="true">Myth of Eden</div>
+{% endblock %}

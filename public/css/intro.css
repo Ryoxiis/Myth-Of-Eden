@@ -1,0 +1,308 @@
+/* ==========================================================================
+   Myth of Eden : cinématique d'entrée (portail 3D au défilement)
+   ========================================================================== */
+
+.page-intro { background: #090806; }
+
+.intro {
+    --p: 0;
+    position: relative;
+    height: 520vh; /* longueur de la cinématique au défilement */
+}
+
+.intro__sticky {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: hidden;
+    isolation: isolate;
+    background: #090806;
+}
+
+/* Décor en arrière-plan : s'assombrit et se floute à mesure qu'on approche. */
+.intro__bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    transform: scale(calc(1.02 + var(--p) * 0.35));
+    opacity: calc(1 - var(--p) * 0.6);
+}
+
+.intro__bg .hero-scene {
+    position: absolute;
+    inset: 0;
+    z-index: auto;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.4) saturate(0.6) sepia(0.25) blur(calc(2px + var(--p) * 10px));
+}
+
+.intro__canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    transition: opacity 1.6s ease;
+}
+
+.portal--ready .intro__canvas { opacity: 1; }
+
+.intro__shade {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(ellipse at 50% 45%, rgba(9, 8, 6, 0) 30%, rgba(9, 8, 6, 0.75) 100%);
+    opacity: calc(1 - var(--p) * 0.8);
+}
+
+.page-intro .grain {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0.08;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Haut de page : marque et « Passer » ---------- */
+
+.intro__top {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem 2rem;
+    opacity: calc(1 - var(--p) * 3);
+}
+
+.intro__brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7rem;
+    font-family: var(--font-title);
+    font-weight: 900;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #fff;
+}
+
+.intro__skip {
+    padding: 0.55rem 1.1rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    background: rgba(9, 8, 6, 0.4);
+    backdrop-filter: blur(8px);
+    color: #d9e2e8;
+    text-decoration: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    transition: border-color 0.3s ease, color 0.3s ease;
+}
+
+.intro__skip:hover { color: #fff; border-color: var(--teal-light); }
+
+/* ---------- Écran de départ ---------- */
+
+.intro__start {
+    position: absolute;
+    left: 50%;
+    bottom: 7vh;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transform: translateX(-50%) translateY(calc(var(--p) * 60px));
+    opacity: clamp(0, calc(1 - var(--p) * 9), 1);
+    pointer-events: auto;
+    width: min(92vw, 900px);
+}
+
+.intro__kicker {
+    margin: 0 0 0.6rem;
+    font-size: 0.78rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--gold-light);
+    opacity: 0;
+    animation: introIn 1.4s ease 1.2s forwards;
+}
+
+.intro__title {
+    margin: 0 0 1.6rem;
+    font-family: var(--font-title);
+    font-weight: 900;
+    font-size: clamp(2.6rem, 7vw, 6.2rem);
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 0 40px rgba(63, 209, 199, 0.35), 0 6px 24px rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    filter: blur(16px);
+    animation: titleIn 2s cubic-bezier(0.2, 0.8, 0.2, 1) 0.6s forwards;
+}
+
+.intro__enter {
+    position: relative;
+    min-height: 54px;
+    padding: 0 2.2rem;
+    border: 1px solid rgba(159, 240, 228, 0.6);
+    border-radius: 999px;
+    background: rgba(63, 209, 199, 0.12);
+    backdrop-filter: blur(10px);
+    color: #e9fffc;
+    font: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 0 30px rgba(63, 209, 199, 0.3), inset 0 0 20px rgba(63, 209, 199, 0.15);
+    transition: background 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+    opacity: 0;
+    animation: introIn 1.2s ease 1.6s forwards;
+}
+
+.intro__enter:hover {
+    background: rgba(63, 209, 199, 0.28);
+    box-shadow: 0 0 50px rgba(63, 209, 199, 0.6), inset 0 0 24px rgba(63, 209, 199, 0.3);
+    transform: translateY(-2px);
+}
+
+.intro__enter:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+
+.intro__hint {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 1.2rem 0 0;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(217, 226, 232, 0.7);
+    opacity: 0;
+    animation: introIn 1.2s ease 2s forwards;
+}
+
+.intro__hint i {
+    position: relative;
+    width: 1px;
+    height: 44px;
+    background: rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+}
+
+.intro__hint i::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: -40%;
+    width: 1px;
+    height: 40%;
+    background: var(--teal-light);
+    animation: hintLine 2s cubic-bezier(0.6, 0, 0.2, 1) infinite;
+}
+
+@keyframes introIn { to { opacity: 1; } }
+@keyframes titleIn { to { opacity: 1; filter: blur(0); } }
+@keyframes hintLine { to { top: 110%; } }
+
+.is-autoplay .intro__start { pointer-events: none; }
+
+/* ---------- Sous-titres de la cinématique ---------- */
+
+.intro__captions { position: absolute; inset: 0; z-index: 5; pointer-events: none; }
+
+.intro__caption {
+    position: absolute;
+    left: 50%;
+    bottom: 14vh;
+    width: min(90vw, 900px);
+    margin: 0;
+    text-align: center;
+    font-family: var(--font-title);
+    font-weight: 700;
+    font-size: clamp(1.4rem, 3.2vw, 2.6rem);
+    line-height: 1.25;
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-shadow: 0 0 30px rgba(63, 209, 199, 0.5), 0 4px 18px rgba(0, 0, 0, 0.85);
+    opacity: 0;
+    transform: translate(-50%, 18px);
+}
+
+.intro__caption--big {
+    bottom: auto;
+    top: 50%;
+    margin-top: -0.6em;
+    font-weight: 900;
+    font-size: clamp(2.2rem, 6vw, 5.4rem);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* ---------- Barre de progression ---------- */
+
+.intro__progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 6;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.intro__progress span {
+    display: block;
+    height: 100%;
+    transform: scaleX(var(--p));
+    transform-origin: left;
+    background: linear-gradient(90deg, var(--gold), var(--teal-light));
+    box-shadow: 0 0 12px var(--teal-light);
+}
+
+/* ---------- Flash final ---------- */
+
+.intro__flash {
+    position: absolute;
+    inset: 0;
+    z-index: 7;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, #ffffff 0%, #c9fff8 25%, #3fd1c7 60%, #0f6f72 100%);
+    opacity: clamp(0, calc((var(--p) - 0.84) * 7), 1);
+}
+
+.is-entering .intro__flash { opacity: 1; transition: opacity 0.35s ease; }
+
+.intro__noscript { position: fixed; bottom: 2rem; left: 0; right: 0; text-align: center; z-index: 10; }
+.intro__noscript a { color: #fff; }
+
+/* ---------- Mouvement réduit : pas de cinématique, bouton direct ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+    .intro { height: 100vh; }
+    .intro__title,
+    .intro__kicker,
+    .intro__enter,
+    .intro__hint { animation: none; opacity: 1; filter: none; }
+    .intro__hint { display: none; }
+}
+
+@media (max-width: 640px) {
+    .intro__top { padding: 1rem; }
+    .intro__brand span { display: none; }
+    .intro__start { bottom: 5vh; }
+}

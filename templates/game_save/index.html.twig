@@ -1,0 +1,53 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes parties · Myth of Eden{% endblock %}
+{% block body_class %}page-inner{% endblock %}
+
+{% block body %}
+    <section class="page-banner">
+        {{ include('partials/_hero_scene.html.twig', {image: 'camp.jpg', position: 'center 72%'}) }}
+        <div class="page-banner__shade"></div>
+        <div class="container page-banner__content">
+            <p class="eyebrow eyebrow--gold">Ton aventure</p>
+            <h1>Mes parties</h1>
+        </div>
+    </section>
+
+    <section class="section section--tight">
+        <div class="container">
+            <div class="slots">
+                {% for number, save in slots %}
+                    {% if save %}
+                        {% set character = save.character %}
+                        <article class="slot accent--{{ character.characterClass.code }}">
+                            <p class="slot__number">Emplacement {{ number }}</p>
+                            <div class="slot__portrait">
+                                {{ include('partials/_portrait.html.twig', {appearance: character.appearance, class_code: character.characterClass.code, size: 96}) }}
+                                <span class="slot__level">{{ character.level }}</span>
+                            </div>
+                            <h2>{{ save.displayName }}</h2>
+                            <p class="slot__class">{{ character.characterClass.name }} · niveau {{ character.level }}</p>
+                            <dl class="slot__meta">
+                                <div><dt>Zone</dt><dd>{{ save.zone|replace({village: 'Village', forest_path: 'Chemin de la forêt', ruin: 'Ruine'}) }}</dd></div>
+                                <div><dt>Temps de jeu</dt><dd>{{ (save.playTimeSeconds / 3600)|round(0, 'floor') }} h {{ ((save.playTimeSeconds % 3600) / 60)|round(0, 'floor') }} min</dd></div>
+                                <div><dt>Sauvegarde</dt><dd>{{ save.updatedAt|date('d/m/Y à H:i') }}</dd></div>
+                            </dl>
+                            <div class="slot__actions">
+                                <a class="btn btn--primary" href="{{ path('app_game_save_show', {id: save.id}) }}">Voir la fiche</a>
+                                <a class="slot__delete" href="{{ path('app_game_save_delete', {id: save.id}) }}">Supprimer</a>
+                            </div>
+                        </article>
+                    {% else %}
+                        <a class="slot slot--empty" href="{{ path('app_game_save_new', {slot: number}) }}">
+                            <p class="slot__number">Emplacement {{ number }}</p>
+                            <div class="slot__badge slot__badge--empty" aria-hidden="true">+</div>
+                            <h2>Emplacement libre</h2>
+                            <p class="slot__class">Crée un nouveau personnage</p>
+                            <span class="btn btn--violet">Nouvelle partie</span>
+                        </a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+{% endblock %}

@@ -1,0 +1,43 @@
+security:
+    password_hashers:
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+
+    providers:
+        # Les joueurs sont chargés depuis la base, identifiés par leur e-mail.
+        app_user_provider:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    firewalls:
+        dev:
+            pattern: ^/(_profiler|_wdt|css|images|js|models)/
+            security: false
+        main:
+            lazy: true
+            provider: app_user_provider
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                username_parameter: email
+                password_parameter: password
+                enable_csrf: true
+                default_target_path: app_game_save_index
+            logout:
+                path: app_logout
+                target: app_home
+                enable_csrf: true
+
+    # Les pages de jeu sont réservées aux joueurs connectés.
+    access_control:
+        - { path: ^/parties, roles: ROLE_USER }
+        # Plus tard : - { path: ^/api, roles: ROLE_USER }
+
+when@test:
+    security:
+        password_hashers:
+            Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
+                algorithm: auto
+                cost: 4
+                time_cost: 3
+                memory_cost: 10

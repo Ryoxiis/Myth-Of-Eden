@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Myth of Eden{% endblock %}
+{% block body_class %}page-intro{% endblock %}
+
+{# Pas de barre de navigation ni de pied de page : seulement le portail. #}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block stylesheets %}
+    <link rel="stylesheet" href="{{ asset('vendor/lenis/lenis.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/intro.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    <script src="{{ asset('vendor/lenis/lenis.min.js') }}" defer></script>
+    <script src="{{ asset('js/intro.js') }}" defer></script>
+    <script type="module" src="{{ asset('js/portal.bundle.js') }}"></script>
+{% endblock %}
+
+{% block body %}
+    <section class="intro" data-portal-host data-intro data-destination="{{ destination }}">
+        <div class="intro__sticky">
+            <div class="intro__bg">
+                {{ include('partials/_hero_scene.html.twig') }}
+            </div>
+            <canvas class="intro__canvas" data-portal-canvas data-portal-offset="0" data-portal-end="-3" aria-hidden="true"></canvas>
+            <div class="intro__shade" aria-hidden="true"></div>
+            <div class="grain" aria-hidden="true"></div>
+
+            <header class="intro__top">
+                <span class="intro__brand">
+                    {{ include('partials/_emblem.html.twig', {size: 36}) }}
+                    <span>Myth of Eden</span>
+                </span>
+                <a class="intro__skip" href="{{ destination }}" data-intro-skip>Passer l'intro <span aria-hidden="true">→</span></a>
+            </header>
+
+            <div class="intro__start">
+                <p class="intro__kicker">Un jeu d'aventure solo en 3D</p>
+                <h1 class="intro__title">Myth of Eden</h1>
+                <button class="intro__enter" type="button" data-intro-enter>
+                    <span>Entrer dans le portail</span>
+                </button>
+                <p class="intro__hint" aria-hidden="true">
+                    <span>ou défile pour t'approcher</span>
+                    <i></i>
+                </p>
+            </div>
+
+            <div class="intro__captions" aria-live="polite">
+                <p class="intro__caption" data-caption data-from="0.10" data-to="0.30">Une lumière brille dans la forêt…</p>
+                <p class="intro__caption" data-caption data-from="0.34" data-to="0.54">Ton compagnon a disparu.<br>Il t'a laissé une piste.</p>
+                <p class="intro__caption intro__caption--big" data-caption data-from="0.58" data-to="0.80">Franchis le portail.</p>
+            </div>
+
+            <div class="intro__progress" aria-hidden="true"><span></span></div>
+            <div class="intro__flash" aria-hidden="true"></div>
+        </div>
+    </section>
+
+    <noscript>
+        <p class="intro__noscript"><a href="{{ destination }}">Entrer dans Myth of Eden</a></p>
+    </noscript>
+{% endblock %}

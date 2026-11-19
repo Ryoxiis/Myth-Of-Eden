@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un compte · Myth of Eden{% endblock %}
+{% block body_class %}page-auth{% endblock %}
+
+{% block body %}
+    <section class="join join--page">
+        {{ include('partials/_hero_scene.html.twig', {image: 'village.jpg', position: 'center 70%'}) }}
+        <div class="join__shade"></div>
+        <div class="join__panel">
+            <p class="eyebrow eyebrow--gold">Nouveau ici ? Inscris-toi !</p>
+            <h1 class="join__title">Créer un compte</h1>
+            <p class="join__subtitle">Prends part à l'aventure</p>
+
+            {{ include('registration/_form.html.twig', {form: registrationForm, submit_label: 'Créer mon compte', autofocus: true}) }}
+
+            <p class="form-footer">Déjà un compte ? <a href="{{ path('app_login') }}">Se connecter</a></p>
+        </div>
+    </section>
+{% endblock %}

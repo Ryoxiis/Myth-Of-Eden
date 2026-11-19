@@ -1,0 +1,28 @@
+{# Ancien emblème dessiné (remplacé par le logo PNG). Emblème de Myth of Eden : un arbre ancien dans un anneau runique. Paramètre facultatif : size (px). #}
+{% set size = size|default(40) %}
+<svg class="emblem" width="{{ size }}" height="{{ size }}" viewBox="0 0 64 64" aria-hidden="true" focusable="false">
+    <defs>
+        <linearGradient id="emblem-gold" gradientUnits="userSpaceOnUse" x1="0" y1="4" x2="0" y2="60">
+            <stop offset="0" stop-color="#f1d28a"/>
+            <stop offset="1" stop-color="#b9842c"/>
+        </linearGradient>
+        <radialGradient id="emblem-core" cx="0.5" cy="0.42" r="0.5">
+            <stop offset="0" stop-color="#9ff3e6" stop-opacity="0.95"/>
+            <stop offset="0.45" stop-color="#3fb6b0" stop-opacity="0.45"/>
+            <stop offset="1" stop-color="#14202b" stop-opacity="0"/>
+        </radialGradient>
+    </defs>
+    <circle cx="32" cy="32" r="29" fill="#16212b" stroke="url(#emblem-gold)" stroke-width="2.5"/>
+    <circle cx="32" cy="32" r="24" fill="none" stroke="url(#emblem-gold)" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.7"/>
+    <circle cx="32" cy="27" r="13" fill="url(#emblem-core)"/>
+    <g fill="none" stroke="url(#emblem-gold)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        {# tronc et racines #}
+        <path d="M32 50 V30" stroke-width="3"/>
+        <path d="M32 48 C28 48 25 50 22 52 M32 48 C36 48 39 50 42 52 M32 46 C30 49 31 52 32 54"/>
+        {# branches #}
+        <path d="M32 36 C27 33 24 29 23 24 M32 33 C37 30 40 26 41 21 M32 30 C30 26 30 21 32 16 M27 30 C24 30 21 28 19 26 M37 28 C40 28 43 27 45 25"/>
+    </g>
+    <circle cx="32" cy="16" r="1.8" fill="#bff7ee"/>
+    <circle cx="23" cy="24" r="1.3" fill="#bff7ee" opacity="0.8"/>
+    <circle cx="41" cy="21" r="1.3" fill="#bff7ee" opacity="0.8"/>
+</svg>

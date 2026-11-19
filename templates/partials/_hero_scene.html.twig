@@ -1,0 +1,9 @@
+{#
+    Image de fond des bannières.
+    Paramètres facultatifs :
+      - image    : fichier dans public/images/ (par défaut "hero.jpg")
+      - position : cadrage CSS object-position (par défaut "center 62%")
+    Images conseillées : format 16:9, idéalement 2560×1440, moins de 500 Ko.
+#}
+<img class="hero-scene" src="{{ asset('images/' ~ image|default('hero.jpg')) }}" alt="" aria-hidden="true"
+     style="object-position: {{ position|default('center 62%') }}" decoding="async"{{ (image|default('hero.jpg')) == 'hero.jpg' ? ' fetchpriority="high"' }}>

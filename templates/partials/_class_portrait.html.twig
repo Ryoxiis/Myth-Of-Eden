@@ -1,0 +1,9 @@
+{#
+    Portrait rond d'une classe : public/images/classes/{code}.jpg (600 × 600).
+    Si l'image est absente, l'initiale de la classe s'affiche à la place.
+    Paramètres : class (CharacterClass), extra_class (classe CSS facultative).
+#}
+<span class="class-portrait accent--{{ class.code }} {{ extra_class|default('') }}">
+    <span class="class-portrait__letter" aria-hidden="true">{{ class.name|first }}</span>
+    <img src="{{ asset('images/classes/' ~ class.code ~ '.jpg') }}" alt="Portrait : {{ class.name }}" loading="lazy" decoding="async" onerror="this.remove()">
+</span>

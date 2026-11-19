@@ -1,0 +1,17 @@
+# Configuration des services de l'application.
+# https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
+parameters:
+
+services:
+    _defaults:
+        autowire: true
+        autoconfigure: true
+
+    # Toutes les classes de src/ sont des services, sauf les données (entités, enums) et le noyau.
+    App\:
+        resource: '../src/'
+        exclude:
+            - '../src/DependencyInjection/'
+            - '../src/Entity/'
+            - '../src/Enum/'
+            - '../src/Kernel.php'

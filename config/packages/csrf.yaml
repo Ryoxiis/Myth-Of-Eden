@@ -1,0 +1,7 @@
+# Protection CSRF des formulaires (inscription, connexion, déconnexion).
+# Les jetons sont gardés en session : aucun JavaScript n'est nécessaire.
+framework:
+    csrf_protection: true
+    form:
+        csrf_protection:
+            enabled: true

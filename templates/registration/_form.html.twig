@@ -1,0 +1,13 @@
+{# Formulaire d'inscription, réutilisé sur l'accueil et sur la page /inscription. #}
+{{ form_start(form, {attr: {class: 'form', novalidate: 'novalidate'}}) }}
+    {{ form_errors(form) }}
+    {{ form_row(form.email, {attr: {autocomplete: 'email', autofocus: autofocus|default(false)}}) }}
+    <div class="form-grid">
+        {{ form_row(form.plainPassword.first) }}
+        {{ form_row(form.plainPassword.second) }}
+    </div>
+
+    <div class="form-actions">
+        <button type="submit" class="btn btn--primary btn--glow">{{ submit_label|default('Jouer maintenant') }}</button>
+    </div>
+{{ form_end(form) }}

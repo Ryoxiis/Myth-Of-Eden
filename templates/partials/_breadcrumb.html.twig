@@ -1,0 +1,13 @@
+{# Fil d'Ariane. Paramètre : items = liste de {label, url?} ; le dernier élément est la page courante. #}
+<nav class="breadcrumb" aria-label="Fil d'Ariane">
+    <a class="breadcrumb__home" href="{{ path('app_discover') }}" aria-label="Découvrir le jeu">
+        {{ include('partials/_emblem.html.twig', {size: 26}) }}
+    </a>
+    {% for item in items %}
+        {% if item.url is defined and not loop.last %}
+            <a class="breadcrumb__item" href="{{ item.url }}">{{ item.label }}</a>
+        {% else %}
+            <span class="breadcrumb__item breadcrumb__item--current" aria-current="page">{{ item.label }}</span>
+        {% endif %}
+    {% endfor %}
+</nav>

@@ -1,0 +1,114 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouveau personnage · Myth of Eden{% endblock %}
+{% block body_class %}page-inner{% endblock %}
+
+{% block body %}
+    <section class="page-banner page-banner--short">
+        {{ include('partials/_hero_scene.html.twig', {image: 'camp.jpg', position: 'center 72%'}) }}
+        <div class="page-banner__shade"></div>
+        <div class="container page-banner__content">
+            {{ include('partials/_breadcrumb.html.twig', {items: [
+                {label: 'Mes parties', url: path('app_game_save_index')},
+                {label: 'Emplacement ' ~ slot},
+            ]}) }}
+            <p class="eyebrow eyebrow--gold">Emplacement {{ slot }}</p>
+            <h1>Nouveau personnage</h1>
+        </div>
+    </section>
+
+    <section class="section section--tight">
+        <div class="container">
+            {{ form_start(form, {attr: {class: 'form creation', novalidate: 'novalidate'}}) }}
+                {{ form_errors(form) }}
+
+                <div class="creation__layout">
+                    {# ----- Identité et apparence ----- #}
+                    <div class="panel creation__identity">
+                        <h2 class="panel__title">Identité</h2>
+                        {{ form_row(form.name, {attr: {autofocus: true, maxlength: 40, autocomplete: 'off', placeholder: 'Ex. : Aelis'}}) }}
+
+                        <fieldset class="choice-group">
+                            <legend>Silhouette</legend>
+                            {{ form_errors(form.body) }}
+                            <div class="pill-choices">
+                                {% for choice in form.body %}
+                                    <label class="pill-choice">
+                                        {{ form_widget(choice) }}
+                                        <span>{{ choice.vars.label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="choice-group">
+                            <legend>Teint</legend>
+                            {{ form_errors(form.skinTone) }}
+                            <div class="swatches">
+                                {% for choice in form.skinTone %}
+                                    <label class="swatch" title="{{ choice.vars.value }}">
+                                        {{ form_widget(choice) }}
+                                        <span style="--swatch: {{ skinTones[choice.vars.value] }}"></span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="choice-group">
+                            <legend>Cheveux</legend>
+                            {{ form_errors(form.hairColor) }}
+                            <div class="swatches">
+                                {% for choice in form.hairColor %}
+                                    <label class="swatch" title="{{ choice.vars.value }}">
+                                        {{ form_widget(choice) }}
+                                        <span style="--swatch: {{ hairColors[choice.vars.value] }}"></span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+
+                        <p class="hint">L'apparence sera reprise par le personnage 3D.</p>
+                    </div>
+
+                    {# ----- Choix de la classe ----- #}
+                    <div class="creation__classes">
+                        <h2 class="panel__title">Choisis ta classe</h2>
+                        {{ form_errors(form.characterClass) }}
+                        <div class="class-choices">
+                            {% for choice in form.characterClass %}
+                                {% set class = (form.characterClass.vars.choices|filter(c => c.value == choice.vars.value)|first).data %}
+                                {% set s = class.baseStats %}
+                                <label class="class-choice accent--{{ class.code }}">
+                                    {{ form_widget(choice) }}
+                                    <span class="class-choice__card">
+                                        {{ include('partials/_class_portrait.html.twig', {class: class, extra_class: 'class-choice__badge'}) }}
+                                        <span class="class-choice__name">{{ class.name }}</span>
+                                        <span class="class-choice__desc">{{ class.description }}</span>
+                                        <span class="class-choice__perks">
+                                            {% for advantage in class.advantages %}<span>✦ {{ advantage }}</span>{% endfor %}
+                                        </span>
+                                        <span class="class-choice__stats">
+                                            <span>Santé <b>{{ s.health }}</b></span>
+                                            <span>Endurance <b>{{ s.stamina }}</b></span>
+                                            <span>Force <b>{{ s.strength }}</b></span>
+                                            <span>Agilité <b>{{ s.agility }}</b></span>
+                                            <span>Discrétion <b>{{ s.stealth }}</b></span>
+                                            <span>Magie <b>{{ s.magicMastery }}</b></span>
+                                            <span>Pistage <b>{{ s.tracking }}</b></span>
+                                        </span>
+                                    </span>
+                                </label>
+                            {% endfor %}
+                        </div>
+                        <p class="hint">La classe est définitive pour toute l'aventure. Toutes les classes peuvent apprendre la magie, mais le Mage la maîtrise mieux.</p>
+                    </div>
+                </div>
+
+                <div class="creation__actions">
+                    <a class="btn btn--ghost" href="{{ path('app_game_save_index') }}">Annuler</a>
+                    <button type="submit" class="btn btn--violet btn--glow btn--large">Commencer l'aventure</button>
+                </div>
+            {{ form_end(form, {render_rest: true}) }}
+        </div>
+    </section>
+{% endblock %}
