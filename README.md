@@ -82,6 +82,37 @@ Les données de jeu (classes, objets, quêtes, indices) ont un `code` stable, pa
 | `/connexion`, `/inscription`, `/deconnexion` | Compte joueur |
 | `/parties` | Emplacements de partie ; `/parties/nouvelle/{slot}` création ; `/parties/{id}` fiche ; `/parties/{id}/supprimer` |
 
+## API JSON du jeu
+
+Utilisée par le client 3D. Le joueur est identifié par sa session (même connexion que le site) ; il ne peut agir que sur ses propres parties (`GameSaveVoter`). Code : `src/Controller/Api/GameApiController.php` et `src/Service/GameStateService.php`.
+
+| Méthode | Adresse | Corps JSON | Rôle |
+|---|---|---|---|
+| GET | `/api/parties/{id}` | — | État complet : personnage, statistiques (bonus inclus), position, inventaire, quêtes, indices |
+| POST | `/api/parties/{id}/objets/ramasser` | `{"item": "engraved_pendant", "quantity": 1}` | Ajoute l'objet au sac (empile si possible) ; certains objets font avancer une quête et révèlent un indice |
+| POST | `/api/parties/{id}/sauvegarde` | `{"zone": "village", "position": {"x": 0, "y": 0, "z": 0, "rotationY": 90}, "playedSeconds": 120}` | Enregistre la position, la zone et le temps de jeu |
+
+Réponses d'erreur au format `{"error": "message"}` :
+
+| Code | Cas |
+|---|---|
+| 400 | Corps qui n'est pas du JSON valide |
+| 401 | Joueur non connecté |
+| 403 | Partie appartenant à un autre joueur |
+| 404 | Partie ou objet inconnu |
+| 422 | Valeur invalide (quantité, zone, coordonnées, temps de jeu) |
+
+Exemple depuis le navigateur (joueur connecté) :
+
+```js
+const state = await fetch('/api/parties/1').then((r) => r.json());
+await fetch('/api/parties/1/objets/ramasser', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ item: 'engraved_pendant' }),
+});
+```
+
 ## Front-end (animations et portail 3D)
 
 - `assets/js/portal.js` : source du portail 3D (Three.js). Le site charge la version compilée `public/js/portal.bundle.js`.

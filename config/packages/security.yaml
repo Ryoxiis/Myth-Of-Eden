@@ -16,6 +16,8 @@ security:
         main:
             lazy: true
             provider: app_user_provider
+            # Non connecté : JSON 401 pour /api, redirection vers /connexion pour le site.
+            entry_point: App\Security\ApiAwareEntryPoint
             form_login:
                 login_path: app_login
                 check_path: app_login
@@ -31,7 +33,7 @@ security:
     # Les pages de jeu sont réservées aux joueurs connectés.
     access_control:
         - { path: ^/parties, roles: ROLE_USER }
-        # Plus tard : - { path: ^/api, roles: ROLE_USER }
+        - { path: ^/api, roles: ROLE_USER }
 
 when@test:
     security:
