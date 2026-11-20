@@ -77,6 +77,18 @@
                     <span class="hud-zone__save" data-save-indicator></span>
                 </div>
 
+                {# Boussole : points cardinaux et objectif de quête (rempli par hud.js). #}
+                <div class="hud-compass" data-compass aria-hidden="true">
+                    <div class="hud-compass__track" data-compass-track></div>
+                    <span class="hud-compass__needle"></span>
+                </div>
+                <p class="hud-compass__goal" data-compass-goal hidden></p>
+
+                {# Réticule de visée, au centre de l'écran. #}
+                <div class="hud-crosshair" data-crosshair aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><i></i>
+                </div>
+
                 <div class="hud-toasts" data-toasts aria-live="polite"></div>
 
                 <p class="hud-prompt" data-prompt hidden></p>
@@ -84,9 +96,12 @@
                 <ul class="hud-help">
                     <li><kbd>ZQSD</kbd> Bouger</li>
                     <li><kbd>Maj</kbd> Courir</li>
+                    <li><kbd>Clic</kbd> Attaquer</li>
+                    <li><kbd>E</kbd> Parler</li>
                     <li><kbd>1</kbd>–<kbd>6</kbd> Compétences</li>
                     <li><kbd>P</kbd> Grimoire</li>
                     <li><kbd>B</kbd> Inventaire</li>
+                    <li><kbd>M</kbd> Carte</li>
                     <li><kbd>Échap</kbd> Pause</li>
                     <li><kbd>F3</kbd> Infos</li>
                 </ul>
@@ -111,6 +126,19 @@
             <section class="inventory" data-inventory hidden></section>
             <section class="loot" data-loot hidden></section>
             <section class="shop" data-shop hidden></section>
+            <section class="map" data-map hidden></section>
+
+            {# --- Dialogue avec un PNJ --- #}
+            <section class="dialogue" data-dialogue hidden aria-live="polite">
+                <div class="dialogue__panel">
+                    <p class="dialogue__name"><b data-dialogue-name></b> <span data-dialogue-title></span></p>
+                    <p class="dialogue__line" data-dialogue-line></p>
+                    <div class="dialogue__actions">
+                        <span class="dialogue__progress" data-dialogue-progress></span>
+                        <button class="game-btn game-btn--primary" type="button" data-dialogue-next>Continuer <kbd>E</kbd></button>
+                    </div>
+                </div>
+            </section>
 
             {# --- Mort du personnage --- #}
             <section class="game-death" data-death hidden>

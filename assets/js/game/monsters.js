@@ -21,7 +21,7 @@ const ACTIVE_DISTANCE = 40; // au-delà, le monstre est figé (pas d'IA ni d'ani
 const SHADOW_DISTANCE = 22; // seuls les monstres proches projettent une ombre (coût de rendu)
 
 /** Emplacements fixes des boss. */
-const BOSS_SPOTS = {
+export const BOSS_SPOTS = {
     brannoc: { x: 122, z: -42 },
     ruin_warden: { x: RUIN_CENTER.x, z: RUIN_CENTER.z - 3 },
 };

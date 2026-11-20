@@ -7,7 +7,10 @@ import { runeIcon } from './ui/icons.js';
 const CLASS_LABELS = { scout: 'Éclaireur', fighter: 'Combattant', traveler: 'Voyageur', mage: 'Mage' };
 const ZONE_LABELS = { village: 'Village forestier', forest_path: 'Chemin de la forêt', ruin: 'Ruine oubliée' };
 const TIER_LABELS = { elite: 'Élite', boss: 'Boss' };
-const CLUE_LABELS = { door_object: 'Le pendentif porte le même symbole que la ruine de la légende.' };
+const CLUE_LABELS = {
+    door_object: 'Le pendentif porte le même symbole que la ruine de la légende.',
+    forest_light_testimony: 'Une lumière bleue danse entre les arbres, du côté des vieilles pierres.',
+};
 
 export class Hud {
     constructor(root) {
@@ -46,7 +49,13 @@ export class Hud {
             stats: $('[data-stats]'),
             error: $('[data-error]'),
             errorMessage: $('[data-error-message]'),
+            compass: $('[data-compass]'),
+            compassTrack: $('[data-compass-track]'),
+            compassGoal: $('[data-compass-goal]'),
+            crosshair: $('[data-crosshair]'),
         };
+        this.buildCompass();
+        this.crosshairState = '';
         this.currentPrompt = null;
         this.newItemCode = null;
         this.floatersList = [];
@@ -291,6 +300,95 @@ export class Hud {
             ['Zone', stats.zone],
         ];
         this.el.stats.textContent = rows.map(([label, value]) => `${label} : ${value}`).join('\n');
+    }
+
+    /* --- Boussole ------------------------------------------------------ */
+
+    /** Graduations fixes : points cardinaux tous les 90°, intermédiaires tous les 45°, traits tous les 15°. */
+    buildCompass() {
+        const names = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SO', 270: 'O', 315: 'NO' };
+        this.compassMarks = [];
+        for (let angle = 0; angle < 360; angle += 15) {
+            const mark = document.createElement('span');
+            const name = names[angle];
+            mark.className = `hud-compass__mark${name ? (angle % 90 === 0 ? ' is-cardinal' : '') : ' is-tick'}${angle === 0 ? ' is-north' : ''}`;
+            mark.textContent = name ?? '';
+            this.el.compassTrack.append(mark);
+            this.compassMarks.push({ angle, el: mark });
+        }
+        this.compassMarkers = new Map();
+    }
+
+    /**
+     * Met à jour la boussole. `heading` : direction de la caméra en degrés (0 = nord, 90 = est).
+     * `markers` : [{ id, bearing, kind, distance, label }] — bearing en degrés depuis le joueur.
+     */
+    updateCompass(heading, markers) {
+        const half = 90; // la boussole montre 180° (90° de chaque côté)
+        const place = (el, angle, clamp = false) => {
+            let delta = ((angle - heading + 540) % 360) - 180;
+            const outside = Math.abs(delta) > half;
+            if (outside && !clamp) {
+                el.style.display = 'none';
+                return false;
+            }
+            if (outside) delta = Math.sign(delta) * half * 0.94;
+            el.style.display = '';
+            el.style.left = `${50 + (delta / half) * 50}%`;
+            return outside;
+        };
+        for (const mark of this.compassMarks) place(mark.el, mark.angle);
+
+        const seen = new Set();
+        for (const marker of markers) {
+            seen.add(marker.id);
+            let el = this.compassMarkers.get(marker.id);
+            if (!el) {
+                el = document.createElement('span');
+                el.className = `hud-compass__marker is-${marker.kind}`;
+                this.el.compassTrack.append(el);
+                this.compassMarkers.set(marker.id, el);
+            }
+            // L'objectif de quête reste toujours visible, collé au bord s'il est derrière.
+            const edge = place(el, marker.bearing, marker.kind === 'quest');
+            el.classList.toggle('is-edge', edge);
+        }
+        for (const [id, el] of this.compassMarkers) {
+            if (!seen.has(id)) {
+                el.remove();
+                this.compassMarkers.delete(id);
+            }
+        }
+
+        const quest = markers.find((marker) => marker.kind === 'quest');
+        this.el.compassGoal.hidden = !quest;
+        if (quest) {
+            const text = `${quest.label} — <b>${Math.round(quest.distance)} m</b>`;
+            if (this.el.compassGoal.innerHTML !== text) this.el.compassGoal.innerHTML = text;
+        }
+    }
+
+    /* --- Réticule ------------------------------------------------------ */
+
+    /** state : '' (neutre), 'enemy' (cible à portée), 'far' (rien à portée) ; hidden : masqué. */
+    setCrosshair(state, { hidden = false, cooldown = false } = {}) {
+        const el = this.el.crosshair;
+        el.style.opacity = hidden ? '0' : '';
+        if (state !== this.crosshairState) {
+            el.classList.toggle('is-enemy', state === 'enemy');
+            el.classList.toggle('is-far', state === 'far');
+            this.crosshairState = state;
+        }
+        el.classList.toggle('is-cooldown', cooldown);
+    }
+
+    /** Petit « coup au but » : le réticule pivote un instant (doré sur un critique). */
+    crosshairHit(critical = false) {
+        const el = this.el.crosshair;
+        el.classList.add('is-hit');
+        el.classList.toggle('is-crit', critical);
+        clearTimeout(this.hitTimer);
+        this.hitTimer = setTimeout(() => el.classList.remove('is-hit', 'is-crit'), 130);
     }
 
     setPaused(paused) {

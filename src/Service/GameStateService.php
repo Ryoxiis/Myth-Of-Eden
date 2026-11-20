@@ -255,6 +255,9 @@ final class GameStateService
             'sellPrice' => $this->shop->sellPrice($entry),
             'effects' => $item?->getEffects() ?? [],
             'model' => $item?->getModelPath(),
+            'weaponKind' => $item?->getWeaponKind()?->value,
+            'weaponKindLabel' => $item?->getWeaponKind()?->label(),
+            'twoHanded' => $item?->isTwoHanded() ?? false,
         ];
     }
 

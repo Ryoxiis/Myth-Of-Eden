@@ -23,6 +23,7 @@ use App\Enum\SkillType;
 use App\Enum\MonsterTier;
 use App\Enum\Rarity;
 use App\Entity\User;
+use App\Service\NpcInstaller;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
@@ -50,7 +51,10 @@ class AppFixtures extends Fixture
     /** @var array<string, Zone> */
     private array $zones = [];
 
-    public function __construct(private readonly UserPasswordHasherInterface $passwordHasher)
+    public function __construct(
+        private readonly UserPasswordHasherInterface $passwordHasher,
+        private readonly NpcInstaller $npcInstaller,
+    )
     {
     }
 
@@ -62,6 +66,7 @@ class AppFixtures extends Fixture
         $this->loadFirstQuest($manager);
         $this->loadWorld($manager);
         $this->loadMerchants($manager);
+        $this->loadNpcs();
         $manager->flush();
 
         $this->loadDemoAccount($manager);
@@ -225,6 +230,12 @@ class AppFixtures extends Fixture
             $merchant->addOffer(new MerchantOffer($this->items[$code], $price, $rarity));
         }
         $manager->persist($merchant);
+    }
+
+    /** PNJ (Oldin…) : contenu dans App\Content\NpcCatalog, partagé avec la commande app:pnj:installer. */
+    private function loadNpcs(): void
+    {
+        $this->npcInstaller->install($this->zones, $this->clues);
     }
 
     private function loadWorld(ObjectManager $manager): void

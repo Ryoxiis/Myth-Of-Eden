@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Enum\EquipmentSlot;
+use App\Enum\WeaponKind;
 use App\Enum\ItemCategory;
 use App\Repository\ItemRepository;
 use Doctrine\DBAL\Types\Types;
@@ -208,6 +209,22 @@ class Item
         $this->modelPath = $modelPath;
 
         return $this;
+    }
+
+    /** Famille d'arme (null si l'objet ne se tient pas en main principale). */
+    public function getWeaponKind(): ?WeaponKind
+    {
+        if (EquipmentSlot::MainHand !== $this->equipmentSlot) {
+            return null;
+        }
+
+        return WeaponKind::fromModel($this->modelPath ?? $this->code ?? '');
+    }
+
+    /** Arme à deux mains : plus lente, mais plus puissante. */
+    public function isTwoHanded(): bool
+    {
+        return null !== $this->getWeaponKind() && (str_contains($this->modelPath ?? '', '2handed') || str_contains($this->modelPath ?? '', 'staff'));
     }
 
     public function isLootable(): bool

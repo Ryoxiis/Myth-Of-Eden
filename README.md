@@ -202,6 +202,27 @@ php bin/console doctrine:fixtures:load
 | POST | `/api/parties/{id}/marchands/{code}/acheter` | `{"offer": 3, "quantity": 1}` |
 | POST | `/api/parties/{id}/marchands/{code}/vendre` | `{"entry": 42, "quantity": 1}` |
 
+### Combat, visée, PNJ, boussole et carte
+
+- **Attaque de base (clic gauche, bouton maintenu = enchaînement)** : sa forme dépend de l'**arme tenue**, pas de la
+  classe. `Item::getWeaponKind()` (enum `WeaponKind`, déduit du modèle 3D) classe l'arme en corps à corps (épée,
+  hache, dague), à distance (arc, arbalète) ou magique (bâton, baguette). Les dégâts viennent de la caractéristique
+  liée (`WeaponKind::damageStat()` : force, agilité ou maîtrise de la magie, bonus d'équipement compris), du niveau
+  et de la rareté de l'arme ; une arme à deux mains est plus lente mais frappe plus fort ; la classe donne +15 %
+  avec son arme de prédilection. Sans arme : coups de poing. Valeurs affichées dans l'inventaire (`B`).
+- **Compétences d'arme** : les tirs (Tir précis, Volée, Flèche de lune) demandent un arc ou une arbalète, les coups
+  d'épée une arme de corps à corps, le Coup de bouclier un bouclier. Les sorts viennent du lanceur.
+- **Réticule** au centre de l'écran (caméra « par-dessus l'épaule ») : rouge sur une créature à portée ; projectiles
+  et sorts partent vers le point visé, y compris en hauteur.
+- **PNJ** : entité `Npc` (position, modèle, teinte, dialogues JSON, étape de quête et indice), service
+  `DialogueService`, route `POST /api/parties/{id}/pnj/{code}/parler` `{"position": {"x": -2, "z": 2}}` (refus au-delà
+  de 6 m). **Oldin**, près du puits, fait avancer l'étape « Interroger les habitants » (losange doré au-dessus de lui).
+  Contenu dans `App\Content\NpcCatalog` ; `php bin/console app:pnj:installer` crée ou met à jour les PNJ sans effacer
+  les comptes (utile en production, où l'on ne recharge pas les fixtures).
+- **Boussole** en haut de l'écran (nord = +Z) : objectif de la quête en cours avec sa distance, marchande proche.
+- **Carte interactive** (`M`) : relief, zones et niveaux, chemins, brouillard sur les zones jamais visitées,
+  joueur, objectif, PNJ, marchande, maison et boss connus ; molette pour zoomer, glisser pour déplacer, survol = zone.
+
 ### Optimisation : streaming du monde
 
 La carte (360 × 360 m : village, chemin de la forêt, ruine) n'est pas chargée d'un coup :
@@ -234,6 +255,14 @@ npm run build:game
 
 Fait : inscription/connexion, création et suppression de partie, API JSON, prototype 3D du village (déplacement, ramassage du pendentif, sauvegarde).
 
-1. PNJ du village et dialogues pour l'étape « Interroger les habitants »
-2. Chemin de la forêt (zone `forest_path`) puis la ruine et son mécanisme
+1. Ouverture du voile de la ruine et mécanisme magique (fin de la quête)
+2. Répartition des points de caractéristiques, autres PNJ et quêtes secondaires
 3. Tests fonctionnels PHPUnit (sécurité, API)
+
+## Mise en ligne (alwaysdata)
+
+Le site tourne sur https://expernet.alwaysdata.net/myth-of-eden/ (PHP 8.4, MariaDB, `APP_ENV=prod`).
+`public/.htaccess` envoie toutes les adresses vers `index.php` et gère le sous-dossier `/myth-of-eden`.
+Mise à jour : `sauvegarder.bat` en local, puis sur le serveur (terminal SSH) `~/maj-myth-of-eden.sh`
+(récupère le code, `composer install --no-dev`, migrations, cache). Les nouveaux PNJ s'ajoutent avec
+`php bin/console app:pnj:installer`.

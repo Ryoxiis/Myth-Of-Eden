@@ -3,6 +3,7 @@
  * avec les actions Utiliser / Équiper / Retirer (envoyées à l'API Symfony).
  */
 import { itemIcon, slotIcon, runeIcon } from './icons.js';
+import { basicAttackFor } from '../combat.js';
 
 const BAG_SIZE = 24;
 const SLOTS = [
@@ -112,8 +113,11 @@ export class Inventory {
         }).join('');
 
         const stats = state.character?.stats ?? {};
+        const attack = basicAttackFor(state);
         this.statsEl.innerHTML = Object.entries(STAT_LABELS)
-            .map(([code, label]) => `<div><dt>${label}</dt><dd>${stats[code] ?? '—'}</dd></div>`).join('');
+            .map(([code, label]) => `<div><dt>${label}</dt><dd>${stats[code] ?? '—'}</dd></div>`).join('')
+            + `<div class="is-attack" title="Attaque de base (clic gauche) : dépend de l'arme tenue et de vos caractéristiques"><dt>Attaque (${escapeHtml(attack.familyLabel)})</dt><dd>${attack.min}–${attack.max}</dd></div>`
+            + `<div><dt>Coup critique</dt><dd>${Math.round(attack.critChance * 100)} %</dd></div>`;
 
         const cells = [];
         for (let i = 0; i < BAG_SIZE; i += 1) {
@@ -135,6 +139,7 @@ export class Inventory {
             return;
         }
         const lines = [];
+        if (item.weaponKindLabel) lines.push(`${item.weaponKindLabel}${item.twoHanded ? ' · deux mains' : ''}`);
         for (const [stat, value] of Object.entries(item.bonuses ?? {})) lines.push(`+${value} ${STAT_LABELS[stat] ?? stat}`);
         if (item.effects?.heal) lines.push(`Rend ${item.effects.heal} points de santé`);
         const value = item.sellPrice > 0 ? `<p class="item-detail__value">Revente : ${runeIcon()} ${item.sellPrice}${item.quantity > 1 ? ' l\'unité' : ''}</p>` : '';

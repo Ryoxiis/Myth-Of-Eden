@@ -22,6 +22,9 @@ final class RegistrationController extends AbstractController
         Security $security,
     ): Response {
         if ($this->getUser()) {
+            // Sans ce message, on croyait que l'inscription « ne marchait pas » (redirection muette).
+            $this->addFlash('info', sprintf('Tu es déjà connecté avec %s. Déconnecte-toi pour créer un autre compte.', $this->getUser()->getUserIdentifier()));
+
             return $this->redirectToRoute('app_game_save_index');
         }
 

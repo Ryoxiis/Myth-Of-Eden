@@ -21,19 +21,23 @@ import { Hud } from './hud.js';
 import { World, QUALITY } from './world.js';
 import { Player } from './player.js';
 import { Pendant, PENDANT_CODE } from './pendant.js';
-import { isWalkable, zoneAt, pathX, heightAt, RUIN_CENTER } from './terrain.js';
+import { isWalkable, zoneAt, pathX, heightAt, RUIN_CENTER, PATH_END_Z } from './terrain.js';
 import { MonsterManager } from './monsters.js';
 import { ChestManager } from './chests.js';
 import { PlayerGear } from './gear.js';
 import { LootWindow } from './ui/loot.js';
 import { Shop } from './ui/shop.js';
 import { MerchantManager } from './merchant.js';
+import { NpcManager } from './npc.js';
 import { Effects } from './vfx.js';
 import { TrainingDummy } from './dummy.js';
 import { SkillSystem } from './combat.js';
 import { SkillBar } from './ui/skillbar.js';
 import { Grimoire } from './ui/grimoire.js';
 import { Inventory } from './ui/inventory.js';
+import { WorldMap } from './ui/map.js';
+import { HOME } from './layout.js';
+import { BOSS_SPOTS } from './monsters.js';
 
 const AUTOSAVE_EVERY = 30; // secondes
 const STREAM_EVERY = 0.25; // secondes entre deux mises à jour du streaming
@@ -154,6 +158,8 @@ async function boot() {
     game.gear = new PlayerGear(scene, player, assetsUrl);
     game.merchants = new MerchantManager(scene, assetsUrl, world.shadows);
     for (const merchant of worldData.merchants ?? []) await game.merchants.spawn(merchant);
+    game.npcs = new NpcManager(scene, assetsUrl, world.shadows);
+    for (const npc of worldData.npcs ?? []) await game.npcs.spawn(npc);
     createInterface();
 
     setupRendering(scene, player.camera, quality);
@@ -297,6 +303,7 @@ function frame() {
     game.effects.update(dt);
     game.chests.update(realDt, time);
     game.merchants.update(realDt, time, player.position);
+    game.npcs.update(time);
     game.gear.tick(realDt);
     for (const dummy of game.dummies) dummy.update(dt, time);
 
@@ -312,6 +319,7 @@ function frame() {
         if (!game.dead) player.update(dt);
         game.monsters.update(dt, !game.dead);
         game.skills.update(dt);
+        if (game.attackHeld) attack();
         updateZone();
         updateInteraction(time);
 
@@ -329,6 +337,8 @@ function frame() {
     hud.setHealth(game.skills.health, game.skills.maxHealth);
     hud.updateOverlays(realDt, project);
     hud.updateNameplates(nearbyMonsters(), project, game.state.character?.level ?? 1);
+    updateCrosshair();
+    updateCompass();
     if (hud.statsVisible) updateStats();
 }
 
@@ -346,9 +356,11 @@ function nearbyMonsters() {
 /* Combat : impacts, dégâts subis, mort, victoires et butin                 */
 /* ---------------------------------------------------------------------- */
 
-function onImpact(target, { critical, skill }) {
-    game.hitStop = Math.max(game.hitStop, critical ? 0.09 : 0.05);
-    game.player.shake(critical ? 0.16 : skill.offensive && skill.range > 6 ? 0.04 : 0.08);
+function onImpact(target, { critical, skill, basic }) {
+    game.hitStop = Math.max(game.hitStop, critical ? 0.09 : basic ? 0.03 : 0.05);
+    const ranged = basic ? game.skills.basic.kind !== 'melee' : skill.offensive && skill.range > 6;
+    game.player.shake(critical ? 0.16 : ranged ? 0.04 : basic ? 0.05 : 0.08);
+    hud.crosshairHit(critical);
 }
 
 function hurtPlayer(amount, monster) {
@@ -516,12 +528,19 @@ function nearPendant() {
 }
 
 function updateInteraction(time) {
+    if (game.modal) {
+        hud.setPrompt(null);
+        return;
+    }
     const chest = game.dead ? null : game.chests.nearest(game.player.position);
     game.nearChest = chest;
-    const merchant = game.dead || chest ? null : game.merchants.nearest(game.player.position);
+    const npc = game.dead || chest ? null : game.npcs.nearest(game.player.position);
+    game.nearNpc = npc;
+    const merchant = game.dead || chest || npc ? null : game.merchants.nearest(game.player.position);
     game.nearMerchant = merchant;
     hud.setPrompt(nearPendant() && !game.pickingUp ? 'Ramasser le pendentif gravé'
         : chest ? 'Ouvrir le coffre'
+        : npc ? `Parler à ${npc.data.name}`
         : merchant ? `Parler à ${merchant.data.name}` : null);
 
     if (game.world.nearestVeil(game.player.position) < 3.4 && time - game.veilWarnedAt > 8) {
@@ -603,6 +622,7 @@ function createInterface() {
         onTakeAll: () => takeFromChest(null),
         onClose: () => closeModal(),
     });
+    game.map = new WorldMap(root.querySelector('[data-map]'), { onClose: () => closeModal() });
     game.inventory = new Inventory(root.querySelector('[data-inventory]'), {
         onUse: (id) => useItem(id),
         onEquip: (id) => equipItem(id),
@@ -622,6 +642,12 @@ function refreshState(state) {
     hud.setRunes(state.runes ?? 0);
     game.shop?.update(state);
     game.gear?.update(state.inventory ?? []);
+    game.npcs?.setQuestStep(mainQuestStep()?.code ?? null);
+}
+
+function mainQuestStep() {
+    const quest = (game.state.quests ?? []).find((q) => q.main) ?? game.state.quests?.[0];
+    return quest?.status === 'completed' ? null : quest?.currentStep ?? null;
 }
 
 function castSlot(slot) {
@@ -712,6 +738,29 @@ function toggleModal(name) {
     if (document.pointerLockElement) document.exitPointerLock();
     if (name === 'grimoire') game.grimoire.open();
     else if (name === 'inventory') game.inventory.open();
+    else if (name === 'map') game.map.open(mapContext());
+}
+
+/** Tout ce que la carte affiche : position du joueur, objectif, PNJ, marchands, maison, boss connus. */
+function mapContext() {
+    const p = game.player.position;
+    const camera = game.player.camera;
+    const heading = ((Math.atan2(-Math.cos(camera.alpha), -Math.sin(camera.alpha)) * 180) / Math.PI + 360) % 360;
+    const markers = [{ kind: 'home', x: HOME.x, z: HOME.z, label: 'Votre maison' }];
+    for (const npc of game.npcs.npcs) markers.push({ kind: 'npc', x: npc.position.x, z: npc.position.z, label: `${npc.data.name} — ${npc.data.title}` });
+    for (const merchant of game.merchants.merchants) markers.push({ kind: 'merchant', x: merchant.position.x, z: merchant.position.z, label: merchant.data.name });
+    const bosses = (game.worldData?.zones ?? []).flatMap((zone) => zone.monsters.filter((m) => m.tier === 'boss').map((m) => ({ ...m, zone: zone.code })));
+    for (const boss of bosses) {
+        const spot = BOSS_SPOTS[boss.code];
+        if (spot && game.visitedZones.has(boss.zone)) markers.push({ kind: 'boss', x: spot.x, z: spot.z, label: `${boss.name} (boss)` });
+    }
+    const objective = questObjective();
+    let goal = null;
+    if (objective) {
+        goal = { ...objective, distance: Math.hypot(objective.x - p.x, objective.z - p.z) };
+        markers.push({ kind: 'quest', x: objective.x, z: objective.z, label: objective.label });
+    }
+    return { player: { x: p.x, z: p.z, heading }, visited: game.visitedZones, zones: hud.zones, markers, goal };
 }
 
 function closeModal({ relock = true } = {}) {
@@ -721,6 +770,9 @@ function closeModal({ relock = true } = {}) {
     game.inventory.close();
     game.loot.close();
     game.shop.close();
+    game.map.close();
+    dialogueEl.hidden = true;
+    game.dialogue = null;
     if (game.openChest) {
         game.chests.close(game.openChest);
         game.openChest = null;
@@ -792,6 +844,139 @@ async function saveNow({ silent = false, keepalive = false } = {}) {
 }
 
 /* ---------------------------------------------------------------------- */
+/* Attaque au clic, réticule et boussole                                   */
+/* ---------------------------------------------------------------------- */
+
+/** Clic gauche (souris capturée) : attaque de base ; on peut garder le bouton enfoncé. */
+function attack() {
+    if (!game.running || game.paused || game.modal || game.dead || !document.pointerLockElement) {
+        game.attackHeld = false;
+        return;
+    }
+    game.skills.basicAttack();
+}
+
+/** Réticule : rouge sur une créature à portée, grisé quand rien n'est à portée. */
+function updateCrosshair() {
+    const hidden = !game.running || game.paused || Boolean(game.modal) || game.dead;
+    if (hidden) {
+        hud.setCrosshair('', { hidden: true });
+        return;
+    }
+    const sight = game.skills.aimAt(game.skills.basic.range);
+    if (sight.target) hud.showTarget(sight.target);
+    const inReach = sight.target || Vector3.Distance(sight.point, game.player.position) <= game.skills.basic.range + 0.5;
+    hud.setCrosshair(sight.target ? 'enemy' : inReach ? '' : 'far', { cooldown: !game.skills.attackReady });
+}
+
+/** Où se trouve l'objectif de la quête en cours (point du monde), selon l'étape. */
+function questObjective() {
+    const step = mainQuestStep();
+    if (!step) return null;
+    switch (step.code) {
+        case 'examine_door_object': {
+            const p = game.pendant && !game.pendant.collected ? game.pendant.base : game.world.homeDoor;
+            return { x: p.x, z: p.z, label: 'Le pendentif devant votre porte' };
+        }
+        case 'ask_villagers': {
+            const npc = game.npcs.npcs.find((n) => n.data.questStep === step.code);
+            return npc ? { x: npc.position.x, z: npc.position.z, label: `Parler à ${npc.data.name}` } : null;
+        }
+        case 'follow_forest_path': {
+            // Le bout du chemin de la forêt, ou le prochain tronçon si l'on est déjà dessus.
+            const z = Math.max(PATH_END_Z, Math.min(-30, game.player.position.z - 40));
+            return { x: pathX(z), z, label: 'Suivre le chemin de la forêt' };
+        }
+        case 'enter_ruin':
+        case 'activate_mechanism':
+            return { x: RUIN_CENTER.x, z: RUIN_CENTER.z, label: step.objective };
+        default:
+            return null;
+    }
+}
+
+/** Boussole : nord = +Z, est = +X. Affiche l'objectif de quête et la marchande proche. */
+function updateCompass() {
+    const camera = game.player.camera;
+    const toDegrees = (x, z) => ((Math.atan2(x, z) * 180) / Math.PI + 360) % 360;
+    const heading = toDegrees(-Math.cos(camera.alpha), -Math.sin(camera.alpha));
+    const p = game.player.position;
+    const markers = [];
+
+    const goal = questObjective();
+    if (goal) {
+        const distance = Math.hypot(goal.x - p.x, goal.z - p.z);
+        markers.push({ id: 'quest', kind: 'quest', bearing: toDegrees(goal.x - p.x, goal.z - p.z), distance, label: goal.label });
+    }
+    for (const merchant of game.merchants.merchants) {
+        const distance = Math.hypot(merchant.position.x - p.x, merchant.position.z - p.z);
+        if (distance < 60) {
+            markers.push({ id: `merchant-${merchant.data.code}`, kind: 'merchant', bearing: toDegrees(merchant.position.x - p.x, merchant.position.z - p.z), distance });
+        }
+    }
+    hud.updateCompass(heading, markers);
+}
+
+/* ---------------------------------------------------------------------- */
+/* Dialogues avec les PNJ                                                  */
+/* ---------------------------------------------------------------------- */
+
+const dialogueEl = root.querySelector('[data-dialogue]');
+
+async function talkTo(npc) {
+    if (game.talking) return;
+    game.talking = true;
+    const p = game.player.position;
+    game.player.visual.rotation.y = Math.atan2(npc.position.x - p.x, npc.position.z - p.z);
+    game.npcs.talkTo(npc, p);
+    try {
+        const result = await api.talk(npc.data.code, p);
+        const health = game.skills.health;
+        refreshState(result.state);
+        game.skills.health = health;
+        openDialogue(result, npc);
+    } catch (error) {
+        hud.toast(`${npc.data.name} ne répond pas`, error.message);
+    } finally {
+        game.talking = false;
+    }
+}
+
+function openDialogue(result, npc) {
+    toggleModal('dialogue');
+    game.dialogue = { result, npc, index: 0 };
+    dialogueEl.querySelector('[data-dialogue-name]').textContent = result.npc.name;
+    dialogueEl.querySelector('[data-dialogue-title]').textContent = result.npc.title;
+    dialogueEl.hidden = false;
+    showDialogueLine();
+}
+
+function showDialogueLine() {
+    const { result, index } = game.dialogue;
+    const lines = result.lines.length ? result.lines : ['…'];
+    dialogueEl.querySelector('[data-dialogue-line]').textContent = lines[index];
+    dialogueEl.querySelector('[data-dialogue-progress]').textContent = lines.length > 1 ? `${index + 1} / ${lines.length}` : '';
+    const last = index >= lines.length - 1;
+    dialogueEl.querySelector('[data-dialogue-next]').innerHTML = `${last ? 'Au revoir' : 'Continuer'} <kbd>E</kbd>`;
+}
+
+function nextDialogueLine() {
+    if (!game.dialogue) return;
+    const { result } = game.dialogue;
+    game.dialogue.index += 1;
+    if (game.dialogue.index < result.lines.length) {
+        showDialogueLine();
+        return;
+    }
+    closeModal();
+    if (result.questAdvanced) {
+        hud.flashQuest();
+        hud.toast('Quête mise à jour', mainQuestStep()?.objective ?? '', 'magic');
+    }
+    if (result.clue) setTimeout(() => hud.toast('Nouvel indice', hud.clueText(result.clue), 'magic'), 1200);
+}
+
+/* ---------------------------------------------------------------------- */
 /* Pause, sac, raccourcis                                                  */
 /* ---------------------------------------------------------------------- */
 
@@ -836,6 +1021,16 @@ function bindControls() {
             toggleModal('inventory');
             return;
         }
+        if (event.key?.toLowerCase() === 'm' && (!game.modal || game.modal === 'map')) { // touche M en AZERTY comme en QWERTY
+            event.preventDefault();
+            toggleModal('map');
+            return;
+        }
+        if (game.modal === 'dialogue' && (event.code === 'KeyE' || event.code === 'Space' || event.code === 'Enter')) {
+            event.preventDefault();
+            nextDialogueLine();
+            return;
+        }
         if ((game.modal === 'loot' || game.modal === 'shop') && event.code === 'KeyE') {
             closeModal();
             return;
@@ -848,13 +1043,27 @@ function bindControls() {
         if (event.code === 'KeyE') {
             if (nearPendant()) pickUpPendant();
             else if (game.nearChest) openChest(game.nearChest);
+            else if (game.nearNpc) talkTo(game.nearNpc);
             else if (game.nearMerchant) openShop(game.nearMerchant);
         }
         const slot = /^(Digit|Numpad)([1-6])$/.exec(event.code);
         if (slot) castSlot(Number(slot[2]) - 1);
     });
 
+    // Clic gauche = attaque (seulement quand la souris est capturée : le premier clic sert à la capturer).
+    canvas.addEventListener('mousedown', (event) => {
+        if (event.button !== 0 || document.pointerLockElement !== canvas) return;
+        game.attackHeld = true;
+        attack();
+    });
+    window.addEventListener('mouseup', (event) => {
+        if (event.button === 0) game.attackHeld = false;
+    });
+    window.addEventListener('blur', () => { game.attackHeld = false; });
+    dialogueEl.querySelector('[data-dialogue-next]').addEventListener('click', () => nextDialogueLine());
+
     document.addEventListener('pointerlockchange', () => {
+        if (!document.pointerLockElement) game.attackHeld = false;
         if (!document.pointerLockElement && game.running && !game.paused && !game.modal) {
             setPaused(true);
         }

@@ -19,6 +19,8 @@ const VISIBLE_GEAR = {
     traveler: ['1H_Axe'],
     mage: ['2H_Staff'],
 };
+/** Décalage de la caméra vers la droite du personnage (mètres). */
+const SHOULDER_OFFSET = 0.85;
 const BODY_PART = /(Arm|Body|Head|Leg|Cape|Hat|Helmet)/;
 
 const WALK_SPEED = 2.4;
@@ -166,11 +168,19 @@ export class Player {
         this.visual.rotation.y = rotationY;
         // Caméra placée derrière le personnage.
         this.camera.alpha = Math.atan2(-Math.cos(rotationY), -Math.sin(rotationY));
-        this.camera.target.copyFrom(this.body.position.add(new Vector3(0, 1.45, 0)));
+        this.camera.target.copyFrom(this.cameraFocus());
     }
 
     get position() {
         return this.body.position;
+    }
+
+    /** Point regardé par la caméra : au-dessus et à droite du personnage (vue « par-dessus l'épaule »). */
+    cameraFocus() {
+        const alpha = this.camera.alpha;
+        // Droite de la caméra = perpendiculaire à sa direction, au sol.
+        const right = new Vector3(-Math.sin(alpha), 0, Math.cos(alpha));
+        return this.body.position.add(new Vector3(0, 1.75, 0)).add(right.scale(SHOULDER_OFFSET));
     }
 
     get rotationY() {
@@ -287,8 +297,9 @@ export class Player {
             }
         }
 
-        // La caméra suit en douceur, légèrement au-dessus des épaules.
-        const target = this.body.position.add(new Vector3(0, 1.45, 0));
+        // La caméra suit en douceur, au-dessus de l'épaule droite : le centre de l'écran
+        // (le réticule) vise devant le personnage au lieu de tomber sur sa tête.
+        const target = this.cameraFocus();
         Vector3.LerpToRef(camera.target, target, Math.min(1, dt * 10), camera.target);
         if (this.shakeAmount > 0.002) {
             const a = this.shakeAmount;

@@ -7,7 +7,9 @@ use App\Entity\Zone;
 use App\Enum\Rarity;
 use App\Entity\Merchant;
 use App\Entity\MerchantOffer;
+use App\Entity\Npc;
 use App\Repository\MerchantRepository;
+use App\Repository\NpcRepository;
 use App\Repository\ZoneRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -15,13 +17,13 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 /**
- * Données du monde communes à toutes les parties : zones, monstres et raretés.
+ * Données du monde communes à toutes les parties : zones, monstres, marchands, PNJ et raretés.
  */
 #[IsGranted('ROLE_USER')]
 final class WorldApiController extends AbstractController
 {
     #[Route('/api/monde', name: 'api_world', methods: ['GET'])]
-    public function world(ZoneRepository $zoneRepository, MerchantRepository $merchantRepository): JsonResponse
+    public function world(ZoneRepository $zoneRepository, MerchantRepository $merchantRepository, NpcRepository $npcRepository): JsonResponse
     {
         $response = $this->json([
             'zones' => array_map(static fn (Zone $zone) => [
@@ -75,6 +77,18 @@ final class WorldApiController extends AbstractController
                     'price' => $offer->getPrice(),
                 ], $merchant->getOffers()->toArray()),
             ], $merchantRepository->findAll()),
+            'npcs' => array_map(static fn (Npc $npc) => [
+                'code' => $npc->getCode(),
+                'name' => $npc->getName(),
+                'title' => $npc->getTitle(),
+                'zone' => $npc->getZone()?->getCode(),
+                'x' => $npc->getX(),
+                'z' => $npc->getZ(),
+                'rotation' => $npc->getRotation(),
+                'model' => $npc->getModel(),
+                'tint' => $npc->getTint(),
+                'questStep' => $npc->getQuestStepCode(),
+            ], $npcRepository->findAllWithZone()),
             'rarities' => array_map(static fn (Rarity $rarity) => [
                 'code' => $rarity->value,
                 'label' => $rarity->label(),

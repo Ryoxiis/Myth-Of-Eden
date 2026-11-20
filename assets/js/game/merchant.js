@@ -37,6 +37,8 @@ export class MerchantManager {
 
         for (const mesh of holder.getChildMeshes(false)) {
             const base = mesh.name.replace(/_primitive\d+$/, '');
+            // « __root__ » est le parent de tout le modèle : le cacher rendait la marchande invisible.
+            if (base === '__root__') continue;
             const keep = BODY_PART.test(base) || base === 'Mug';
             mesh.setEnabled(keep);
             mesh.isPickable = false;

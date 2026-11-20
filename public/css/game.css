@@ -198,7 +198,7 @@ kbd {
 
 .hud-toasts {
     position: absolute;
-    top: 5.5rem;
+    top: 9rem;
     left: 50%;
     display: grid;
     justify-items: center;
@@ -418,7 +418,7 @@ kbd {
 
 .hud-target {
     position: absolute;
-    top: 1.2rem;
+    top: 4.9rem;
     left: 50%;
     width: min(300px, 60vw);
     padding: 0.5rem 0.8rem 0.6rem;
@@ -918,3 +918,258 @@ kbd {
 .shop-row__btn.is-ghost { border-color: var(--line); background: transparent; color: var(--muted); font-size: 0.72rem; }
 .shop-row__btn.is-confirm { border-color: #e0806f; background: rgba(224, 128, 111, 0.2); color: #ffb3a6; }
 .shop__foot { display: flex; justify-content: space-between; gap: 1rem; padding: 0.7rem 1.3rem 0.9rem; border-top: 1px solid var(--line); color: var(--muted); font-size: 0.75rem; }
+
+/* ---------------------------------------------------------------------- */
+/* Boussole (rose des vents en bandeau) et objectif de quête               */
+/* ---------------------------------------------------------------------- */
+.hud-compass {
+    position: absolute;
+    top: 1.1rem;
+    left: 50%;
+    width: min(460px, 52vw);
+    height: 34px;
+    transform: translateX(-50%);
+    overflow: hidden;
+    border: 1px solid rgba(232, 192, 106, 0.35);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(20, 15, 10, 0.82), rgba(10, 8, 6, 0.7));
+    box-shadow: 0 10px 30px -14px #000, inset 0 0 18px rgba(0, 0, 0, 0.6);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 14%, #000 86%, transparent);
+}
+.hud-compass__track { position: absolute; inset: 0; }
+.hud-compass__mark {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: rgba(240, 230, 210, 0.55);
+    font: 600 0.7rem var(--font-title, serif);
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+}
+.hud-compass__mark.is-cardinal { color: #f2e6cc; font-size: 0.9rem; }
+.hud-compass__mark.is-north { color: #ff7a5c; }
+.hud-compass__mark.is-tick { width: 1px; height: 8px; background: rgba(240, 230, 210, 0.35); font-size: 0; }
+.hud-compass__needle {
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-bottom-color: var(--gold-light);
+}
+.hud-compass__marker {
+    position: absolute;
+    top: 50%;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%) rotate(45deg);
+    border: 2px solid #fff3c9;
+    background: linear-gradient(135deg, #ffd56b, #c98a1a);
+    box-shadow: 0 0 10px rgba(255, 200, 80, 0.9);
+    animation: compass-pulse 1.6s ease-in-out infinite;
+}
+.hud-compass__marker.is-edge { opacity: 0.75; animation: none; }
+.hud-compass__marker.is-merchant {
+    width: 10px;
+    height: 10px;
+    border-color: #ffe9b0;
+    border-radius: 50%;
+    background: #d9a43a;
+    box-shadow: none;
+    animation: none;
+    transform: translate(-50%, -50%);
+}
+@keyframes compass-pulse { 50% { box-shadow: 0 0 18px rgba(255, 210, 90, 1); } }
+.hud-compass__goal {
+    position: absolute;
+    top: 3.35rem;
+    left: 50%;
+    margin: 0;
+    transform: translateX(-50%);
+    color: #ffe2a0;
+    font-size: 0.78rem;
+    text-shadow: 0 1px 4px #000;
+    white-space: nowrap;
+}
+.hud-compass__goal b { color: #fff; }
+
+/* ---------------------------------------------------------------------- */
+/* Réticule de visée                                                      */
+/* ---------------------------------------------------------------------- */
+.hud-crosshair {
+    --size: 22px;
+    --gap: 5px;
+    --color: rgba(255, 255, 255, 0.9);
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: var(--size);
+    height: var(--size);
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: transform 0.12s ease, opacity 0.2s ease;
+    filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.9));
+}
+.hud-crosshair span {
+    position: absolute;
+    background: var(--color);
+    border-radius: 1px;
+    transition: background 0.12s ease;
+}
+.hud-crosshair span:nth-child(1), .hud-crosshair span:nth-child(2) { left: calc(50% - 1px); width: 2px; height: calc(50% - var(--gap)); }
+.hud-crosshair span:nth-child(1) { top: 0; }
+.hud-crosshair span:nth-child(2) { bottom: 0; }
+.hud-crosshair span:nth-child(3), .hud-crosshair span:nth-child(4) { top: calc(50% - 1px); height: 2px; width: calc(50% - var(--gap)); }
+.hud-crosshair span:nth-child(3) { left: 0; }
+.hud-crosshair span:nth-child(4) { right: 0; }
+.hud-crosshair i {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 3px;
+    height: 3px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: var(--color);
+}
+.hud-crosshair.is-enemy { --color: #ff5a4a; transform: translate(-50%, -50%) scale(0.85); }
+.hud-crosshair.is-far { --color: rgba(255, 255, 255, 0.45); }
+.hud-crosshair.is-cooldown { opacity: 0.55; }
+.hud-crosshair.is-hit { transform: translate(-50%, -50%) scale(1.35) rotate(45deg); }
+.hud-crosshair.is-crit { --color: #ffd34a; }
+.game.has-modal .hud-crosshair, .game.is-paused .hud-crosshair { opacity: 0; }
+
+/* ---------------------------------------------------------------------- */
+/* Dialogue avec un PNJ                                                    */
+/* ---------------------------------------------------------------------- */
+.dialogue { position: absolute; inset: auto 0 0 0; z-index: 15; display: grid; justify-items: center; padding: 0 1rem calc(140px + 3vh); pointer-events: none; }
+.dialogue__panel {
+    width: min(720px, 94vw);
+    padding: 1rem 1.3rem 0.9rem;
+    border: 1px solid rgba(232, 192, 106, 0.4);
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(42, 33, 23, 0.96), rgba(20, 16, 11, 0.96));
+    box-shadow: 0 30px 60px -25px #000;
+    pointer-events: auto;
+    animation: card-in 0.25s ease;
+}
+.dialogue__name { margin: 0 0 0.35rem; color: var(--gold-light); font: 700 1.05rem var(--font-title, serif); }
+.dialogue__name span { color: var(--muted, #a99); font: italic 400 0.8rem var(--font-body, sans-serif); margin-left: 0.4rem; }
+.dialogue__line { margin: 0; min-height: 3.2em; color: #f3ead8; font-size: 1rem; line-height: 1.55; }
+.dialogue__actions { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 0.7rem; }
+.dialogue__progress { color: var(--muted, #a99); font-size: 0.75rem; }
+.dialogue kbd { margin-left: 0.3rem; font-size: 0.7rem; opacity: 0.8; }
+
+/* ---------------------------------------------------------------------- */
+/* Carte du monde (M)                                                      */
+/* ---------------------------------------------------------------------- */
+.map { position: absolute; inset: 0; z-index: 15; display: grid; place-items: center; padding: 1rem; background: rgba(5, 4, 3, 0.55); }
+.map__panel {
+    width: min(1040px, 96vw);
+    height: min(720px, 92vh);
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(232, 192, 106, 0.4);
+    border-radius: 18px;
+    background: linear-gradient(180deg, #2a2117, #14100b);
+    box-shadow: 0 40px 80px -30px #000;
+    overflow: hidden;
+    animation: card-in 0.3s ease;
+}
+.map__head { display: flex; align-items: center; gap: 1rem; padding: 0.9rem 1.2rem 0.7rem; border-bottom: 1px solid rgba(232, 192, 106, 0.15); }
+.map__head > div:first-child { flex: 1; }
+.map__kicker { margin: 0; color: var(--gold-light); font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; }
+.map__head h2 { margin: 0; font: 700 1.35rem var(--font-title, serif); }
+.map__tools { display: flex; gap: 0.4rem; align-items: center; }
+.map__tool, .map__close {
+    min-width: 2.1rem; height: 2.1rem; padding: 0 0.6rem;
+    border: 1px solid rgba(232, 192, 106, 0.35); border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35); color: #f3ead8; font: 600 1rem var(--font-body, sans-serif); cursor: pointer;
+}
+.map__tool--wide { font-size: 0.8rem; }
+.map__tool:hover, .map__close:hover { border-color: var(--gold-light); color: var(--gold-light); }
+.map__body { flex: 1; display: grid; grid-template-columns: 1fr 230px; min-height: 0; }
+.map__viewport { position: relative; overflow: hidden; cursor: grab; background: #1a1712; touch-action: none; }
+.map__viewport.is-dragging { cursor: grabbing; }
+.map__sheet {
+    --pin-scale: 1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(100%, 100vh);
+    aspect-ratio: 1;
+    height: auto;
+    max-height: 100%;
+    transform-origin: center;
+    transform: translate(-50%, -50%);
+}
+.map__viewport .map__sheet { width: auto; height: 100%; }
+.map__canvas { width: 100%; height: 100%; display: block; image-rendering: auto; border-radius: 6px; box-shadow: 0 0 0 1px rgba(232, 192, 106, 0.25); }
+.map__labels, .map__markers { position: absolute; inset: 0; pointer-events: none; }
+.map__markers .map-pin { pointer-events: auto; }
+.map-label {
+    position: absolute;
+    margin: 0;
+    transform: translate(-50%, -50%) scale(var(--pin-scale));
+    display: grid;
+    justify-items: center;
+    color: #fff3d6;
+    text-shadow: 0 1px 3px #000, 0 0 8px rgba(0, 0, 0, 0.8);
+    white-space: nowrap;
+}
+.map-label b { font: 700 0.85rem var(--font-title, serif); letter-spacing: 0.04em; }
+.map-label span { font-size: 0.68rem; color: #ffd98a; }
+.map-label.is-fog { color: rgba(220, 215, 205, 0.55); }
+.map-label.is-fog span { color: rgba(220, 215, 205, 0.6); font-style: italic; }
+.map-pin {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    transform: translate(-50%, -50%) scale(var(--pin-scale));
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.45);
+}
+.map__legend .map-pin { position: relative; display: inline-block; transform: none; vertical-align: middle; margin-right: 0.45rem; }
+.map-pin--player {
+    width: 0; height: 0; border-radius: 0; border: 0; box-shadow: none;
+    border-left: 8px solid transparent; border-right: 8px solid transparent; border-bottom: 18px solid #6fe3ff;
+    filter: drop-shadow(0 0 4px rgba(111, 227, 255, 0.9)) drop-shadow(0 1px 1px #000);
+    transform: translate(-50%, -50%) scale(var(--pin-scale)) rotate(var(--heading, 0deg));
+}
+.map__legend .map-pin--player { transform: none; }
+.map-pin--quest { border-radius: 2px; background: #ffc83c; transform: translate(-50%, -50%) scale(var(--pin-scale)) rotate(45deg); animation: compass-pulse 1.6s ease-in-out infinite; }
+.map__legend .map-pin--quest { transform: rotate(45deg); }
+.map-pin--npc { background: #b98cff; }
+.map-pin--merchant { background: #e5a83a; }
+.map-pin--home { border-radius: 3px; background: #7ec46a; }
+.map-pin--boss { background: #d8423a; border-color: #2a0d0b; width: 16px; height: 16px; }
+.map__legend { padding: 1rem 1.1rem; border-left: 1px solid rgba(232, 192, 106, 0.15); display: flex; flex-direction: column; gap: 0.9rem; font-size: 0.85rem; overflow: auto; }
+.map__legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.55rem; color: #e8dcc4; }
+.map__goal { margin: 0; padding: 0.7rem 0.8rem; border: 1px solid rgba(255, 200, 80, 0.35); border-radius: 10px; background: rgba(255, 200, 80, 0.08); color: #f6e7c4; line-height: 1.4; }
+.map__goal b { display: block; color: #ffd36b; font-size: 0.7rem; letter-spacing: 0.14em; text-transform: uppercase; }
+.map__goal span { color: #fff; font-weight: 700; }
+.map__help { margin-top: auto; color: var(--muted, #a99); font-size: 0.75rem; line-height: 1.6; }
+.map__hover {
+    position: absolute;
+    margin: 0;
+    padding: 0.3rem 0.6rem;
+    border: 1px solid rgba(232, 192, 106, 0.35);
+    border-radius: 8px;
+    background: rgba(12, 10, 7, 0.92);
+    color: #f3ead8;
+    font-size: 0.78rem;
+    pointer-events: none;
+    white-space: nowrap;
+}
+@media (max-width: 760px) {
+    .map__body { grid-template-columns: 1fr; }
+    .map__legend { display: none; }
+}
+.inventory__stats .is-attack dd { color: #ffd36b; }
+
+.game.has-map .skillbar, .game.has-dialogue .hud-prompt { opacity: 0; pointer-events: none; }
+.dialogue__actions .game-btn { width: auto; flex: 0 0 auto; }

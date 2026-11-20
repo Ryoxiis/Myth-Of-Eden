@@ -10,6 +10,7 @@ import { CreateTorus } from '@babylonjs/core/Meshes/Builders/torusBuilder';
 import { CreateCylinder } from '@babylonjs/core/Meshes/Builders/cylinderBuilder';
 import { TrailMesh } from '@babylonjs/core/Meshes/trailMesh';
 import { StandardMaterial } from '@babylonjs/core/Materials/standardMaterial';
+import { heightAt } from './terrain.js';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { ParticleSystem } from '@babylonjs/core/Particles/particleSystem';
 
@@ -131,38 +132,50 @@ export class Effects {
         }
 
         let travelled = 0;
+        let finished = false;
+        const finish = () => {
+            if (finished) return;
+            finished = true;
+            tail?.stop();
+            if (tail) setTimeout(() => tail.dispose(), 500);
+            ribbon.stop();
+            setTimeout(() => {
+                ribbon.dispose();
+                ribbonMaterial.dispose();
+            }, 250);
+            mesh.isVisible = false;
+            setTimeout(() => mesh.dispose(), 260);
+        };
         this.active.push({
             update: (dt) => {
                 const step = speed * dt;
                 mesh.position.addInPlace(direction.scale(step));
                 travelled += step;
                 const hit = onStep?.(mesh.position);
-                if (hit || travelled >= range) {
-                    onEnd?.(mesh.position.clone(), hit);
-                    if (hit) this.ring(mesh.position, color, 1.2, 0.3, mesh.position.y);
-                    tail?.stop();
-                    if (tail) setTimeout(() => tail.dispose(), 500);
-                    ribbon.stop();
-                    setTimeout(() => {
-                        ribbon.dispose();
-                        ribbonMaterial.dispose();
-                    }, 250);
-                    mesh.isVisible = false;
-                    setTimeout(() => mesh.dispose(), 260);
+                if (hit || travelled >= range || !Number.isFinite(mesh.position.y)) {
+                    // Le projectile est nettoyé même si la suite (dégâts, victoire…) échoue.
+                    try {
+                        onEnd?.(mesh.position.clone(), hit);
+                        if (hit) this.ring(mesh.position, color, 1.2, 0.3, mesh.position.y);
+                    } finally {
+                        finish();
+                    }
                     return false;
                 }
                 return true;
             },
+            dispose: finish,
         });
     }
 
     /** Anneau qui s'élargit au sol (onde de choc, givre, tourbillon). */
-    ring(center, color, radius, duration = 0.5, height = 0.15) {
+    ring(center, color, radius, duration = 0.5, height = null) {
         const ring = CreateTorus('ring', { diameter: 1, thickness: 0.08, tessellation: 48 }, this.scene);
         const material = this.material(color, 0.9).clone('ringMaterial');
         ring.material = material;
         ring.isPickable = false;
-        ring.position.set(center.x, height, center.z);
+        // Par défaut, juste au-dessus du sol à cet endroit (le terrain n'est pas plat).
+        ring.position.set(center.x, height ?? heightAt(center.x, center.z) + 0.15, center.z);
         let t = 0;
         this.active.push({
             update: (dt) => {
@@ -176,6 +189,10 @@ export class Effects {
                     return false;
                 }
                 return true;
+            },
+            dispose: () => {
+                ring.dispose();
+                material.dispose();
             },
         });
     }
@@ -200,6 +217,10 @@ export class Effects {
                     return false;
                 }
                 return true;
+            },
+            dispose: () => {
+                arc.dispose();
+                material.dispose();
             },
         });
     }
@@ -241,6 +262,11 @@ export class Effects {
                 }
                 return true;
             },
+            dispose: () => {
+                system.dispose();
+                sphere?.dispose();
+                material?.dispose();
+            },
         });
     }
 
@@ -272,6 +298,12 @@ export class Effects {
                     return false;
                 }
                 return true;
+            },
+            dispose: () => {
+                sparkles.dispose();
+                orb.dispose();
+                this.orbUntil = 0;
+                light.intensity = 0;
             },
         });
     }
@@ -308,11 +340,29 @@ export class Effects {
                 }
                 return true;
             },
+            dispose: () => {
+                fire.dispose();
+                this.spellLight.intensity = 0;
+            },
         });
     }
 
     update(dt) {
-        this.active = this.active.filter((effect) => effect.update(dt));
+        // Un effet qui plante est retiré (et nettoyé) sans bloquer les autres : sinon tous les
+        // anneaux, halos et projectiles en cours resteraient figés à l'écran.
+        this.active = this.active.filter((effect) => {
+            try {
+                return effect.update(dt);
+            } catch (error) {
+                console.error('[effets]', error);
+                try {
+                    effect.dispose?.();
+                } catch {
+                    // rien de plus à nettoyer
+                }
+                return false;
+            }
+        });
         if (this.lightTimer > 0) {
             this.lightTimer -= dt;
             this.spellLight.intensity = this.lightFull * Math.max(0, this.lightTimer / this.lightDuration);

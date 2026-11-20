@@ -6,6 +6,8 @@ use App\Entity\GameSave;
 use App\Entity\InventoryItem;
 use App\Entity\LootChest;
 use App\Entity\Merchant;
+use App\Entity\Npc;
+use App\Service\DialogueService;
 use App\Repository\MerchantOfferRepository;
 use App\Repository\MonsterRepository;
 use App\Service\ShopService;
@@ -195,6 +197,40 @@ final class GameApiController extends AbstractController
         return $this->json([
             'taken' => \count($taken),
             'chest' => $empty ? null : $this->gameState->exportChest($chest),
+            'state' => $this->gameState->export($gameSave),
+        ]);
+    }
+
+    /**
+     * Parle à un PNJ : corps JSON {"position": {"x": -3, "z": 3}}.
+     * Renvoie ses répliques ; à la bonne étape de quête, celle-ci avance et un indice est découvert.
+     */
+    #[Route('/pnj/{npc}/parler', name: 'api_game_npc_talk', methods: ['POST'])]
+    public function talk(#[MapEntity(id: 'id')] GameSave $gameSave, #[MapEntity(mapping: ['npc' => 'code'])] Npc $npc, Request $request, DialogueService $dialogues): JsonResponse
+    {
+        $data = $this->readJson($request);
+        if ($data instanceof JsonResponse) {
+            return $data;
+        }
+
+        $x = $data['position']['x'] ?? null;
+        $z = $data['position']['z'] ?? null;
+        if (!is_numeric($x) || !is_numeric($z)) {
+            return $this->error('Position du joueur manquante.');
+        }
+
+        try {
+            $result = $dialogues->talk($gameSave, $npc, (float) $x, (float) $z);
+        } catch (\InvalidArgumentException $exception) {
+            return $this->error($exception->getMessage());
+        }
+        $this->entityManager->flush();
+
+        return $this->json([
+            'npc' => ['code' => $npc->getCode(), 'name' => $npc->getName(), 'title' => $npc->getTitle()],
+            'lines' => $result['lines'],
+            'questAdvanced' => $result['questAdvanced'],
+            'clue' => $result['clue'],
             'state' => $this->gameState->export($gameSave),
         ]);
     }

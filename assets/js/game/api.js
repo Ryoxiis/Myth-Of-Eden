@@ -91,6 +91,11 @@ export class GameApi {
         return this.request(`/marchands/${merchantCode}/vendre`, { method: 'POST', body: { entry: entryId, quantity } });
     }
 
+    /** Parle à un PNJ : répliques, et avancée de quête s'il y a lieu. */
+    talk(npcCode, position) {
+        return this.request(`/pnj/${npcCode}/parler`, { method: 'POST', body: { position: { x: +position.x.toFixed(2), z: +position.z.toFixed(2) } } });
+    }
+
     /** Sauvegarde la position et le temps joué depuis la dernière sauvegarde. */
     save(payload, { keepalive = false } = {}) {
         return this.request('/sauvegarde', { method: 'POST', body: payload, keepalive });

@@ -19,7 +19,7 @@ export const VILLAGE_RADIUS = 30;
 export const WORLD_LIMIT = 158;
 const PATH_HALF_WIDTH = 4.5;
 const PATH_START_Z = -20;
-const PATH_END_Z = -150;
+export const PATH_END_Z = -150;
 const RUIN_RADIUS = 15;
 
 /** Tracé sinueux du chemin de la forêt (x en fonction de z). */
