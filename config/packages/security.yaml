@@ -33,6 +33,7 @@ security:
     # Les pages de jeu sont réservées aux joueurs connectés.
     access_control:
         - { path: ^/parties, roles: ROLE_USER }
+        - { path: ^/jouer, roles: ROLE_USER }
         - { path: ^/api, roles: ROLE_USER }
 
 when@test:

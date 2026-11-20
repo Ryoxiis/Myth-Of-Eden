@@ -128,9 +128,48 @@ await fetch('/api/parties/1/objets/ramasser', {
 - `public/vendor/` : GSAP + ScrollTrigger (licence gratuite GSAP) et Lenis (MIT), servis tels quels.
 - Les animations respectent le réglage « réduire les animations » du système.
 
+## Jeu 3D (prototype Babylon.js)
+
+Depuis **Mes parties**, le bouton **Jouer** (ou « Continuer l'aventure » sur la fiche) ouvre `/jouer/{id}`.
+La page Symfony affiche seulement le canvas ; le jeu dialogue ensuite avec l'API JSON ci-dessus :
+
+1. `GET /api/parties/{id}` : personnage, sac, quête, position ;
+2. le joueur explore le village de nuit et le chemin de la forêt jusqu'à la ruine (ZQSD ou flèches, Maj pour courir, souris pour la caméra) ;
+3. devant sa porte, `E` ramasse le **pendentif gravé** → `POST /objets/ramasser` (la quête avance, l'indice est révélé) ;
+4. la position et la zone (`village`, `forest_path`, `ruin`) sont sauvegardées toutes les 30 s, à la pause (`Échap`) et en quittant → `POST /sauvegarde`.
+
+### Optimisation : streaming du monde
+
+La carte (360 × 360 m : village, chemin de la forêt, ruine) n'est pas chargée d'un coup :
+
+- **Streaming par cases** (`streamer.js`) : le monde est découpé en cases de 24 m. Seules les cases à moins de ~75 m
+  du joueur sont créées ; celles qui dépassent ~95 m sont détruites (écart volontaire pour éviter les allers-retours).
+  Au lancement, environ 40 cases sur 226 sont chargées ; un fichier `.glb` n'est téléchargé que lorsqu'une case en a besoin.
+- **Instances GPU** : les copies d'un même modèle partagent leur géométrie ; l'herbe utilise des *thin instances*
+  (des centaines de touffes en un seul appel de dessin), elle aussi chargée par cases de 16 m autour du joueur.
+- **LOD / culling** : les petits objets disparaissent au-delà de 42 m, les arbres au-delà de 110 m (cachés par le brouillard).
+- **Groupe de lampes** : 6 lumières seulement, déplacées vers les lanternes les plus proches (pas de recompilation de shaders).
+- **Ombres** centrées sur le joueur : seuls les objets proches en projettent.
+- **Qualité graphique** (menu Pause) : Basse / Moyenne / Haute (taille des ombres, densité de l'herbe, occlusion ambiante SSAO, rayon de chargement).
+- `F3` affiche les compteurs en direct (FPS, appels de dessin, cases chargées, objets en mémoire).
+
+Sources : `assets/js/game/` — `main.js` (boucle, sauvegarde, qualité), `world.js` (ambiance, création des objets),
+`terrain.js` (relief, zones praticables, mélange herbe/terre/roche), `layout.js` (plan de la carte), `streamer.js`,
+`grass.js`, `player.js` (personnage, caméra avec « bras » anti-murs), `pendant.js`, `hud.js`, `api.js`.
+Le bundle compilé est dans `public/js/game/`. Modèles et textures : `public/models/` (licences dans `assets-3d/LICENCES.md`).
+Ajouter `?debug` à l'URL expose `window.__game`.
+
+Recompiler après une modification (Node.js requis) :
+
+```bash
+npm install
+npm run build:game
+```
+
 ## Prochaines étapes
 
-1. Inscription, connexion et déconnexion
-2. Création d'une partie : nom, apparence et classe du personnage ; suppression avec confirmation
-3. Choix du client 3D et API JSON de chargement et de sauvegarde
-4. Petite scène : déplacement et ramassage d'un objet enregistré dans Symfony
+Fait : inscription/connexion, création et suppression de partie, API JSON, prototype 3D du village (déplacement, ramassage du pendentif, sauvegarde).
+
+1. PNJ du village et dialogues pour l'étape « Interroger les habitants »
+2. Chemin de la forêt (zone `forest_path`) puis la ruine et son mécanisme
+3. Tests fonctionnels PHPUnit (sécurité, API)

@@ -11,3 +11,7 @@
 
 # Modèles 3D sources lourds (garder les exports optimisés dans public/models)
 /assets-3d/sources/
+
+###> node ###
+/node_modules/
+###< node ###

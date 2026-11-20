@@ -6,7 +6,12 @@ Garde une capture ou une copie du texte de la licence dans `assets-3d/licences/`
 
 | Modèle | Fichier dans le projet | Auteur | Page d'origine | Licence | Usage autorisé (perso / école / commercial) | Modifications faites |
 |---|---|---|---|---|---|---|
-| _exemple : Épée courte_ | `public/models/items/short_sword.glb` | _pseudo_ | _URL_ | _CC-BY 4.0, Personal Use…_ | _école oui, commercial non_ | _réduit à 5k triangles, texture 1024px_ |
+| Village Pack (maisons, auberge, scierie, puits, arbres, buissons, rochers, lanternes, clôtures, caisses, tonneaux, murs et arche) | `public/models/village/*.glb` | Babylon.js (équipe Babylon.js / Microsoft) | https://github.com/BabylonJS/Assets/tree/master/meshes/Demos/village | **CC-BY 4.0** — crédit obligatoire : « Village Pack — Babylon.js, CC-BY 4.0 » | école oui, commercial oui avec crédit | textures réduites à 1024 px et converties en WebP (gltf-transform) |
+| Textures du terrain (herbe + relief, terre, sol rocheux, normales), lueur | `public/models/textures/{grass,dirt,rock}_*.jpg`, `flare2.png` | Babylon.js | https://github.com/BabylonJS/Assets/tree/master/textures | **CC-BY 4.0** (même dépôt) | école oui, commercial oui avec crédit | redimensionnées, terre assombrie, converties en JPEG |
+| Touffe d'herbe (carte alpha) | `public/models/textures/grass_card.png` | Babylon.js (démo UnderWaterScene) | https://github.com/BabylonJS/Assets/tree/master/meshes/Demos/UnderWaterScene/grass | **CC-BY 4.0** | idem | éclaircie, couleurs étendues sous la transparence |
+| Éclairage d'environnement de nuit | `public/models/textures/night.env` | Babylon.js | https://github.com/BabylonJS/Assets/tree/master/ibl | **CC-BY 4.0** | idem | aucune |
+| KayKit Character Pack : Adventurers (Rogue capuche, Knight, Barbarian, Mage) | `public/models/characters/{scout,fighter,traveler,mage}.glb` | Kay Lousberg (KayKit) | https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0 | **CC0** (domaine public, crédit apprécié) | tout usage | renommés par classe, textures en WebP ; animations incluses (Idle, Walking_A, Running_A, PickUp…) |
+| Pendentif gravé | généré par le code (`assets/js/game/pendant.js`) | projet | — | — | — | modèle procédural (anneau + pierre) |
 
 ## Registre des images du site
 

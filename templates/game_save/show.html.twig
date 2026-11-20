@@ -67,7 +67,7 @@
                         <span>/ {{ character.stats.health }} PV</span>
                     </div>
 
-                    <button class="btn btn--violet btn--glow btn--block" type="button" disabled title="Le jeu 3D arrive à une prochaine étape">Continuer l'aventure</button>
+                    <a class="btn btn--violet btn--glow btn--block" href="{{ path('app_game_play', {id: save.id}) }}">Continuer l'aventure</a>
                 </div>
 
                 <dl class="hero-card__facts">

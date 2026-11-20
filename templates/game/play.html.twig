@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#0b0a08">
+        <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="48x48">
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-96.png') }}">
+        <title>{{ character ? character.name : 'Partie' }} — Myth of Eden</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Ubuntu:wght@300;400;500;700&display=swap">
+        <link rel="stylesheet" href="{{ asset('css/game.css') }}">
+        <script src="{{ asset('js/game/game.js') }}" type="module"></script>
+    </head>
+    <body>
+        <main class="game"
+              data-game
+              data-api="{{ path('api_game_load', {id: save.id}) }}"
+              data-exit="{{ path('app_game_save_show', {id: save.id}) }}"
+              data-assets="{{ asset('models/') }}"
+              data-class="{{ classCode }}">
+
+            <canvas class="game__canvas" data-game-canvas aria-label="Scène 3D du village" tabindex="0"></canvas>
+
+            {# --- Écran de chargement --- #}
+            <section class="game-loading" data-loading>
+                <img class="game-loading__logo" src="{{ asset('images/logo-256.png') }}" alt="" width="128" height="128">
+                <p class="game-loading__kicker">Chapitre I — La lumière dans la forêt</p>
+                <h1 class="game-loading__title">{{ zoneLabel }}</h1>
+                <div class="game-loading__bar"><span data-loading-bar></span></div>
+                <p class="game-loading__status" data-loading-status>Ouverture de la partie…</p>
+                <p class="game-loading__tip">Astuce : le monde se charge au fur et à mesure de vos pas. F3 affiche les compteurs.</p>
+            </section>
+
+            {# --- Écran de démarrage (le clic est nécessaire pour capturer la souris) --- #}
+            <section class="game-start" data-start hidden>
+                <div class="game-start__card">
+                    <p class="game-start__kicker">{{ zoneLabel }}</p>
+                    <h2 class="game-start__title">{{ character ? character.name : 'Aventurier' }}</h2>
+                    <p class="game-start__text">La nuit est tombée sur le village. Un objet brille près de la porte de votre maison…</p>
+                    <button class="game-btn game-btn--primary" type="button" data-start-button>Entrer dans le village</button>
+                    <ul class="game-keys">
+                        <li><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> se déplacer</li>
+                        <li><kbd>Maj</kbd> courir</li>
+                        <li><kbd>E</kbd> interagir</li>
+                        <li><kbd>I</kbd> sac</li>
+                        <li><kbd>Échap</kbd> pause</li>
+                    </ul>
+                    <p class="game-credits">Décors et textures : Babylon.js Assets (CC-BY 4.0) · Personnages : KayKit (CC0)</p>
+                </div>
+            </section>
+
+            {# --- Interface en jeu --- #}
+            <div class="hud" data-hud hidden>
+                <header class="hud-hero">
+                    <img class="hud-hero__portrait" src="{{ asset('images/classes/' ~ classCode ~ '.jpg') }}" alt="" width="56" height="56">
+                    <div>
+                        <p class="hud-hero__name">{{ character ? character.name : 'Aventurier' }}</p>
+                        <p class="hud-hero__meta" data-hud-meta></p>
+                        <div class="hud-hero__health"><span data-hud-health></span></div>
+                    </div>
+                </header>
+
+                <section class="hud-quest" aria-live="polite">
+                    <p class="hud-quest__label">Quête principale</p>
+                    <p class="hud-quest__title" data-quest-title></p>
+                    <p class="hud-quest__objective" data-quest-objective></p>
+                </section>
+
+                <div class="hud-zone">
+                    <span data-zone-label>{{ zoneLabel }}</span>
+                    <span class="hud-zone__save" data-save-indicator></span>
+                </div>
+
+                <div class="hud-toasts" data-toasts aria-live="polite"></div>
+
+                <p class="hud-prompt" data-prompt hidden></p>
+
+                <ul class="hud-help">
+                    <li><kbd>ZQSD</kbd> Bouger</li>
+                    <li><kbd>Maj</kbd> Courir</li>
+                    <li><kbd>I</kbd> Sac</li>
+                    <li><kbd>Échap</kbd> Pause</li>
+                    <li><kbd>F3</kbd> Infos</li>
+                </ul>
+
+                <pre class="hud-stats" data-stats hidden></pre>
+
+                <aside class="hud-bag" data-bag hidden>
+                    <header class="hud-bag__head">
+                        <h2>Sac</h2>
+                        <button type="button" class="hud-bag__close" data-bag-close aria-label="Fermer le sac">×</button>
+                    </header>
+                    <ul class="hud-bag__list" data-bag-list></ul>
+                </aside>
+            </div>
+
+            {# --- Menu pause --- #}
+            <section class="game-pause" data-pause hidden>
+                <div class="game-pause__card">
+                    <h2 class="game-pause__title">Pause</h2>
+                    <button class="game-btn game-btn--primary" type="button" data-resume>Reprendre</button>
+                    <button class="game-btn" type="button" data-save>Sauvegarder</button>
+                    <label class="game-quality">
+                        <span>Qualité graphique</span>
+                        <select data-quality></select>
+                    </label>
+                    <button class="game-btn game-btn--ghost" type="button" data-quit>Sauvegarder et quitter</button>
+                    <p class="game-pause__status" data-pause-status></p>
+                </div>
+            </section>
+
+            {# --- Erreur bloquante (WebGL absent, API injoignable…) --- #}
+            <section class="game-error" data-error hidden>
+                <div class="game-pause__card">
+                    <h2 class="game-pause__title">Impossible de lancer le jeu</h2>
+                    <p class="game-error__message" data-error-message></p>
+                    <a class="game-btn" href="{{ path('app_game_save_show', {id: save.id}) }}">Retour à la fiche</a>
+                </div>
+            </section>
+        </main>
+    </body>
+</html>

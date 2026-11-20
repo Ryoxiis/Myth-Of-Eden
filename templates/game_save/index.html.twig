@@ -33,7 +33,8 @@
                                 <div><dt>Sauvegarde</dt><dd>{{ save.updatedAt|date('d/m/Y à H:i') }}</dd></div>
                             </dl>
                             <div class="slot__actions">
-                                <a class="btn btn--primary" href="{{ path('app_game_save_show', {id: save.id}) }}">Voir la fiche</a>
+                                <a class="btn btn--primary" href="{{ path('app_game_play', {id: save.id}) }}">Jouer</a>
+                                <a class="btn btn--ghost" href="{{ path('app_game_save_show', {id: save.id}) }}">Fiche</a>
                                 <a class="slot__delete" href="{{ path('app_game_save_delete', {id: save.id}) }}">Supprimer</a>
                             </div>
                         </article>

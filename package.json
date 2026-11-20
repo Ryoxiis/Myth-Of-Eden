@@ -1,0 +1,14 @@
+{
+    "name": "myth-of-eden",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build:game": "node tools/build-game.mjs"
+    },
+    "devDependencies": {
+        "@babylonjs/core": "^9.37.1",
+        "@babylonjs/loaders": "^9.37.1",
+        "@babylonjs/materials": "^9.37.1",
+        "esbuild": "^0.28.2"
+    }
+}
