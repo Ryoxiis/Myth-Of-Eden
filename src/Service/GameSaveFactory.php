@@ -38,6 +38,7 @@ final class GameSaveFactory
     public function __construct(
         private readonly ItemRepository $itemRepository,
         private readonly QuestRepository $questRepository,
+        private readonly SkillBook $skillBook,
     ) {
     }
 
@@ -61,6 +62,8 @@ final class GameSaveFactory
 
         $this->addStartingItems($gameSave, (string) $data->characterClass->getCode());
         $this->startMainQuest($gameSave);
+        // Barre de départ : les compétences du niveau 1 de la classe.
+        $gameSave->setSkillBar($this->skillBook->defaultBar($gameSave));
 
         return $gameSave;
     }

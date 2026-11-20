@@ -135,16 +135,22 @@ class Character
         return $this;
     }
 
-    /** Expérience totale à atteindre pour passer au niveau suivant (règle provisoire : niveau × 100). */
+    /** Expérience totale à atteindre pour passer du niveau donné au suivant : 100 × niveau^1,5. */
+    public static function experienceThreshold(int $level): int
+    {
+        return $level <= 0 ? 0 : (int) round(100 * $level ** 1.5);
+    }
+
+    /** Expérience totale à atteindre pour passer au niveau suivant. */
     public function getExperienceForNextLevel(): int
     {
-        return $this->level * 100;
+        return self::experienceThreshold($this->level);
     }
 
     /** Progression vers le niveau suivant, de 0 à 100 %. */
     public function getLevelProgressPercent(): int
     {
-        $previous = ($this->level - 1) * 100;
+        $previous = self::experienceThreshold($this->level - 1);
         $span = max(1, $this->getExperienceForNextLevel() - $previous);
 
         return (int) max(0, min(100, round(($this->experience - $previous) / $span * 100)));
@@ -177,5 +183,30 @@ class Character
         $this->currentHealth = max(0, min($currentHealth, $this->stats->getHealth()));
 
         return $this;
+    }
+
+    /**
+     * Ajoute de l'expérience et fait monter de niveau autant de fois que nécessaire.
+     * Chaque niveau donne 3 points à répartir, renforce la santé et l'endurance, et soigne entièrement.
+     *
+     * @param array<string, int> $classGrowth caractéristiques qui progressent avec la classe
+     *
+     * @return int nombre de niveaux gagnés
+     */
+    public function gainExperience(int $amount, array $classGrowth = [], int $maxLevel = 50): int
+    {
+        $this->experience += max(0, $amount);
+        $gained = 0;
+        while ($this->level < $maxLevel && $this->experience >= $this->getExperienceForNextLevel()) {
+            ++$this->level;
+            ++$gained;
+            $this->unspentStatPoints += 3;
+            $this->stats->increase(['health' => 6, 'stamina' => 4] + $classGrowth);
+        }
+        if ($gained > 0) {
+            $this->currentHealth = $this->stats->getHealth();
+        }
+
+        return $gained;
     }
 }

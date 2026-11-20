@@ -9,7 +9,7 @@
         <title>{{ character ? character.name : 'Partie' }} — Myth of Eden</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=Ubuntu:wght@300;400;500;700&display=swap">
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;900&family=IM+Fell+English:ital@0;1&family=Ubuntu:wght@300;400;500;700&display=swap">
         <link rel="stylesheet" href="{{ asset('css/game.css') }}">
         <script src="{{ asset('js/game/game.js') }}" type="module"></script>
     </head>
@@ -17,6 +17,7 @@
         <main class="game"
               data-game
               data-api="{{ path('api_game_load', {id: save.id}) }}"
+              data-world="{{ path('api_world') }}"
               data-exit="{{ path('app_game_save_show', {id: save.id}) }}"
               data-assets="{{ asset('models/') }}"
               data-class="{{ classCode }}">
@@ -44,7 +45,9 @@
                         <li><kbd>Z</kbd><kbd>Q</kbd><kbd>S</kbd><kbd>D</kbd> se déplacer</li>
                         <li><kbd>Maj</kbd> courir</li>
                         <li><kbd>E</kbd> interagir</li>
-                        <li><kbd>I</kbd> sac</li>
+                        <li><kbd>1</kbd>–<kbd>6</kbd> compétences</li>
+                        <li><kbd>P</kbd> grimoire</li>
+                        <li><kbd>B</kbd> inventaire</li>
                         <li><kbd>Échap</kbd> pause</li>
                     </ul>
                     <p class="game-credits">Décors et textures : Babylon.js Assets (CC-BY 4.0) · Personnages : KayKit (CC0)</p>
@@ -70,6 +73,7 @@
 
                 <div class="hud-zone">
                     <span data-zone-label>{{ zoneLabel }}</span>
+                    <span class="hud-runes" data-runes title="Runes"><span class="hud-runes__icon" data-rune-icon></span><b data-runes-value>0</b></span>
                     <span class="hud-zone__save" data-save-indicator></span>
                 </div>
 
@@ -80,21 +84,39 @@
                 <ul class="hud-help">
                     <li><kbd>ZQSD</kbd> Bouger</li>
                     <li><kbd>Maj</kbd> Courir</li>
-                    <li><kbd>I</kbd> Sac</li>
+                    <li><kbd>1</kbd>–<kbd>6</kbd> Compétences</li>
+                    <li><kbd>P</kbd> Grimoire</li>
+                    <li><kbd>B</kbd> Inventaire</li>
                     <li><kbd>Échap</kbd> Pause</li>
                     <li><kbd>F3</kbd> Infos</li>
                 </ul>
 
+                <div class="hud-target" data-target hidden>
+                    <p class="hud-target__name" data-target-name></p>
+                    <div class="hud-target__bar"><span data-target-bar></span></div>
+                    <p class="hud-target__value" data-target-value></p>
+                </div>
+
+                <div class="hud-nameplates" data-nameplates aria-hidden="true"></div>
+                <div class="hud-floaters" data-floaters aria-hidden="true"></div>
+                <div class="hud-hurt" aria-hidden="true"></div>
+
                 <pre class="hud-stats" data-stats hidden></pre>
 
-                <aside class="hud-bag" data-bag hidden>
-                    <header class="hud-bag__head">
-                        <h2>Sac</h2>
-                        <button type="button" class="hud-bag__close" data-bag-close aria-label="Fermer le sac">×</button>
-                    </header>
-                    <ul class="hud-bag__list" data-bag-list></ul>
-                </aside>
+                <div class="skillbar" data-skillbar></div>
             </div>
+
+            {# --- Grimoire (P) et inventaire (B) : remplis par le JavaScript --- #}
+            <section class="grimoire" data-grimoire hidden></section>
+            <section class="inventory" data-inventory hidden></section>
+            <section class="loot" data-loot hidden></section>
+            <section class="shop" data-shop hidden></section>
+
+            {# --- Mort du personnage --- #}
+            <section class="game-death" data-death hidden>
+                <p class="game-death__title">Vous êtes tombé…</p>
+                <p class="game-death__text">Vous reprenez vos esprits au village.</p>
+            </section>
 
             {# --- Menu pause --- #}
             <section class="game-pause" data-pause hidden>

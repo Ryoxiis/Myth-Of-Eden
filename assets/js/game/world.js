@@ -215,6 +215,11 @@ export class World {
             light.falloffType = Light.FALLOFF_STANDARD;
             this.lightPool.push({ light, source: null, seed: i * 17.3 });
         }
+        // Lumière réservée aux compétences (éclairs de sorts, orbe de lumière, feu de camp).
+        this.spellLight = new PointLight('spellLight', new Vector3(0, -50, 0), this.scene);
+        this.spellLight.falloffType = Light.FALLOFF_STANDARD;
+        this.spellLight.intensity = 0;
+        this.spellLight.range = 10;
     }
 
     updateLightPool(position) {
@@ -285,7 +290,7 @@ export class World {
         if (item.collider || item.lantern) {
             const { min, max } = holder.getHierarchyBoundingVectors(true);
             if (item.collider === 'box') disposables.push(this.boxCollider(min, max, item.shrink));
-            else if (item.collider === 'trunk') disposables.push(this.trunkCollider(item.x, item.z, 0.5 * item.scale));
+            else if (item.collider === 'trunk') disposables.push(this.trunkCollider(item.x, item.z, 0.5 * item.scale, item.y));
             if (item.lantern) disposables.push(...this.addLantern(item, min, max));
         }
         for (const mesh of meshes) mesh.freezeWorldMatrix();
@@ -305,9 +310,9 @@ export class World {
         return this.finishCollider(box);
     }
 
-    trunkCollider(x, z, radius) {
+    trunkCollider(x, z, radius, y = 0) {
         const trunk = CreateCylinder('collider', { diameter: radius * 2, height: 4, tessellation: 8 }, this.scene);
-        trunk.position.set(x, 2, z);
+        trunk.position.set(x, y + 2, z);
         return this.finishCollider(trunk);
     }
 
@@ -476,8 +481,8 @@ export class World {
             const snap = 2;
             const cx = Math.round(position.x / snap) * snap;
             const cz = Math.round(position.z / snap) * snap;
-            this.moon.position.set(cx - this.moonDirection.x * 80, -this.moonDirection.y * 80, cz - this.moonDirection.z * 80);
-            this.fireflies.emitter.set(position.x, 0, position.z);
+            this.moon.position.set(cx - this.moonDirection.x * 80, position.y - this.moonDirection.y * 80, cz - this.moonDirection.z * 80);
+            this.fireflies.emitter.set(position.x, position.y, position.z);
             this.grass.update(time, position.x, position.z);
         }
     }

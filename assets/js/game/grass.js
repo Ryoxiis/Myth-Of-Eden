@@ -10,7 +10,7 @@ import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { Texture } from '@babylonjs/core/Materials/Textures/texture';
 import { CustomMaterial } from '@babylonjs/materials/custom/customMaterial';
 import { random } from './noise.js';
-import { heightAt, walkableDistance, WORLD_SIZE } from './terrain.js';
+import { heightAt, walkableDistance, WORLD_LIMIT } from './terrain.js';
 
 const CLUMP_HEIGHT = 0.6;
 
@@ -87,13 +87,10 @@ export class GrassField {
     /** Une entrée par case de la grille : le streamer appellera spawn() quand le joueur sera proche. */
     items(cellSize) {
         const list = [];
-        const half = WORLD_SIZE / 2;
+        const half = WORLD_LIMIT + cellSize;
         for (let x = -half; x < half; x += cellSize) {
             for (let z = -half; z < half; z += cellSize) {
-                const cx = x + cellSize / 2;
-                const cz = z + cellSize / 2;
-                if (walkableDistance(cx, cz) > cellSize + 12) continue; // pas d'herbe au cœur des collines
-                list.push({ type: 'grass', x: cx, z: cz, size: cellSize });
+                list.push({ type: 'grass', x: x + cellSize / 2, z: z + cellSize / 2, size: cellSize });
             }
         }
         return list;
@@ -113,7 +110,9 @@ export class GrassField {
             const x = item.x + (rand() - 0.5) * item.size;
             const z = item.z + (rand() - 0.5) * item.size;
             const edge = walkableDistance(x, z);
-            if (edge > 10 || this.terrain.dirtAt(x, z) > 0.2) continue;
+            if (this.terrain.dirtAt(x, z) > 0.2 || Math.max(Math.abs(x), Math.abs(z)) > WORLD_LIMIT) continue;
+            // Moins d'herbe sous la forêt dense de Sombrebois et sur les collines sèches.
+            if ((x < -50 || x > 50) && rand() < 0.45) continue;
             if (this.avoid.some((zone) => Math.hypot(x - zone.x, z - zone.z) < zone.r)) continue;
             // Plus clairsemée au milieu du village (piétiné), plus drue en lisière.
             if (edge < -6 && Math.hypot(x, z) < 26 && rand() < 0.55) continue;

@@ -27,6 +27,12 @@ final class GameSaveSummary
     /** Libellés courts des zones du prototype. */
     public const ZONE_LABELS = [
         'village' => 'Village forestier',
+        'lisiere' => 'Bois de la Lisière',
+        'chemin' => 'Chemin de la forêt',
+        'collines' => 'Collines rocheuses',
+        'sombrebois' => 'Sombrebois',
+        'ruine' => 'Ruine oubliée',
+        // anciens codes (parties créées avant le monde ouvert)
         'forest_path' => 'Chemin de la forêt',
         'ruin' => 'Ruine oubliée',
     ];
@@ -59,7 +65,7 @@ final class GameSaveSummary
 
             $equippedBySlot[$slot->value] = $inventoryItem;
 
-            foreach ($inventoryItem->getItem()?->getStatBonuses() ?? [] as $stat => $value) {
+            foreach ($inventoryItem->getEffectiveBonuses() as $stat => $value) {
                 if (\array_key_exists($stat, $bonuses)) {
                     $bonuses[$stat] += (int) $value;
                 }

@@ -169,4 +169,18 @@ class Stats
 
         return $this;
     }
+
+    /**
+     * Ajoute des points à certaines caractéristiques, ex. ["health" => 6, "strength" => 1].
+     *
+     * @param array<string, int> $deltas
+     */
+    public function increase(array $deltas): void
+    {
+        foreach ($deltas as $stat => $value) {
+            if (property_exists($this, $stat)) {
+                $this->{$stat} += $value;
+            }
+        }
+    }
 }

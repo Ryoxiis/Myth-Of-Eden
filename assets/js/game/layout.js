@@ -4,7 +4,7 @@
  * seulement quand le joueur s'approchera de sa case.
  */
 import { random } from './noise.js';
-import { heightAt, walkableDistance, pathX, RUIN_CENTER, WORLD_SIZE, VILLAGE_RADIUS } from './terrain.js';
+import { heightAt, walkableDistance, pathX, RUIN_CENTER, WORLD_SIZE, VILLAGE_RADIUS, zoneAt } from './terrain.js';
 
 /** Maison du joueur : sans rotation, ses portes donnent sur ±X, celle de l'est sur la place. */
 export const HOME = { x: -13, z: 5, rotation: 0 };
@@ -40,6 +40,8 @@ export function buildLayout() {
         item('stumpAxe', -9.5, -10.5, { rotation: 2 }),
         item('hollowLog', -21, -6, { rotation: 0.9 }),
         item('stump', 14, -8, { rotation: 0.7 }),
+        // Étal de la marchande (Odile) près de la place.
+        item('crate2', 2.2, 11, { rotation: 0.4 }), item('crate1', 1.6, 10.2, { rotation: 1.1 }), item('barrel', 5.1, 11.1),
     );
     for (let i = 0; i < 4; i += 1) add(item('fence', -19, 2 + i * 3.4, { shrink: 1 }));
     for (let i = 0; i < 3; i += 1) add(item('fence', -17.3 + i * 3.4, 14.8, { rotation: P / 2, shrink: 1 }));
@@ -69,34 +71,35 @@ export function buildLayout() {
     /* --- Forêt sur tout le terrain ---------------------------------- */
     const half = WORLD_SIZE / 2 - 8;
     const forest = random(1234);
-    for (let i = 0; i < 2200; i += 1) {
+    // Densité de la forêt selon la région : Sombrebois touffu, collines clairsemées.
+    const DENSITY = { lisiere: 0.42, chemin: 0.62, sombrebois: 0.78, collines: 0.14, ruine: 0.3, village: 0 };
+    for (let i = 0; i < 3200; i += 1) {
         const x = (forest() * 2 - 1) * half;
         const z = (forest() * 2 - 1) * half;
         const d = walkableDistance(x, z);
         const inVillage = Math.hypot(x, z) < VILLAGE_RADIUS - 3;
         if (d < 3 || inVillage) continue;
-        // Plus dense près des zones praticables (lisière), plus clairsemé au loin.
-        const keep = d < 30 ? 0.7 : 0.4;
+        const keep = DENSITY[zoneAt(x, z)] ?? 0.4;
         if (forest() > keep) continue;
         add(item(`tree${1 + Math.floor(forest() * 4)}`, x, z, {
             y: heightAt(x, z) - 0.25,
             rotation: forest() * P * 2,
             scale: 0.9 + forest() * 0.7,
-            collider: d < 6 ? 'trunk' : null,
+            collider: Math.max(Math.abs(x), Math.abs(z)) < 160 ? 'trunk' : null,
         }));
     }
 
     // Buissons et rochers en lisière et dans le village.
     const scatter = random(99);
-    for (let i = 0; i < 900; i += 1) {
+    for (let i = 0; i < 1700; i += 1) {
         const x = (scatter() * 2 - 1) * half;
         const z = (scatter() * 2 - 1) * half;
         const d = walkableDistance(x, z);
-        if (d > 18 || Math.hypot(x - HOME.x, z - HOME.z) < 7 || Math.hypot(x - 15, z - 13) < 11 || Math.hypot(x, z) < 11) continue;
+        if (Math.hypot(x - HOME.x, z - HOME.z) < 7 || Math.hypot(x - 15, z - 13) < 11 || Math.hypot(x, z) < 11) continue;
         const inVillage = Math.hypot(x, z) < VILLAGE_RADIUS;
         if (d < 0.8 && !inVillage) continue; // chemin et clairière dégagés
         if (d < -1 && inVillage && scatter() > 0.35) continue;
-        const isRock = scatter() < 0.28;
+        const isRock = scatter() < (x > 50 ? 0.7 : 0.28);
         add(item(isRock ? `rocks${2 + Math.floor(scatter() * 3)}` : `bush${1 + Math.floor(scatter() * 3)}`, x, z, {
             y: heightAt(x, z) - 0.05,
             rotation: scatter() * 6.28,
@@ -104,12 +107,27 @@ export function buildLayout() {
             collider: isRock && d < 1 ? 'box' : null,
         }));
     }
-    for (let i = 0; i < 40; i += 1) {
+    for (let i = 0; i < 140; i += 1) {
         const x = (scatter() * 2 - 1) * half;
         const z = (scatter() * 2 - 1) * half;
         const d = walkableDistance(x, z);
         if (d < 4) continue;
         add(item('rocks1', x, z, { y: heightAt(x, z) - 0.4, rotation: scatter() * 6.28, scale: 0.8 + scatter() * 0.9, collider: null }));
+    }
+
+    // Camps de pillards dans les collines, troncs et souches dans Sombrebois.
+    const camps = random(555);
+    for (const [cx, cz] of [[95, 30], [120, -40], [80, -90], [130, 80], [70, 110]]) {
+        add(item('wagon', cx, cz, { rotation: camps() * 6.28 }));
+        add(item('crateStack', cx + 3, cz - 2, { rotation: camps() * 6.28 }));
+        add(item('barrel', cx - 2.5, cz + 2), item('barrel', cx - 3.4, cz + 1.2), item('crate2', cx + 1, cz + 3.5, { rotation: camps() }));
+        add({ ...item('lightPost1', cx - 4, cz - 3, { rotation: camps() * 6.28, collider: 'trunk' }), lantern: true });
+    }
+    for (let i = 0; i < 60; i += 1) {
+        const x = -60 - camps() * 95;
+        const z = (camps() * 2 - 1) * 140;
+        if (walkableDistance(x, z) < 2) continue;
+        add(item(camps() < 0.5 ? 'hollowLog' : 'stump', x, z, { y: heightAt(x, z) - 0.1, rotation: camps() * 6.28, collider: null }));
     }
 
     /* --- Ruine au bout du chemin ------------------------------------- */

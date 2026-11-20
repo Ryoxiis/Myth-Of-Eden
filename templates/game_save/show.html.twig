@@ -112,7 +112,7 @@
                         {% for entry in summary.equipment %}
                             <li class="{{ entry.item ? 'is-filled' }}">
                                 <span class="slot-list__label">{{ entry.slot.label }}</span>
-                                <span class="slot-list__item">{{ entry.item ? entry.item.item.name : '—' }}</span>
+                                <span class="slot-list__item"{% if entry.item and entry.item.rarity.value != 'common' %} style="color: {{ entry.item.rarity.value == 'cosmic' ? '#a78bfa' : entry.item.rarity.color }}" title="{{ entry.item.rarity.label }} · niveau {{ entry.item.itemLevel }}"{% endif %}>{{ entry.item ? entry.item.item.name : '—' }}</span>
                             </li>
                         {% endfor %}
                     </ul>
@@ -127,8 +127,8 @@
                             {% for entry in summary.bag %}
                                 <li>
                                     <span>
-                                        <b>{{ entry.item.name }}</b>
-                                        <small>{{ entry.item.category.label }}</small>
+                                        <b{% if entry.rarity.value != 'common' %} style="color: {{ entry.rarity.value == 'cosmic' ? '#a78bfa' : entry.rarity.color }}"{% endif %}>{{ entry.item.name }}</b>
+                                        <small>{{ entry.rarity.value != 'common' ? entry.rarity.label ~ ' · ' }}{{ entry.item.category.label }}</small>
                                     </span>
                                     <span class="qty">×{{ entry.quantity }}</span>
                                 </li>
@@ -166,6 +166,24 @@
                     {% endif %}
                 </section>
             </div>
+
+            <section class="dash-skills">
+                <header class="dash-skills__head">
+                    <h2>Grimoire</h2>
+                    <p>Compétences de la classe {{ character.characterClass.name }} · en jeu, touche <kbd>P</kbd> pour ouvrir le grimoire.</p>
+                </header>
+                <ul class="skill-cards">
+                    {% for skill in skills %}
+                        {% set unlocked = skill.unlockedAt(character.level) %}
+                        <li class="skill-card {{ unlocked ? 'is-unlocked' : 'is-locked' }} {{ skill.code in skillBar ? 'is-equipped' }}">
+                            <span class="skill-card__level">Niv. {{ skill.requiredLevel }}</span>
+                            <b>{{ skill.name }}</b>
+                            <small>{{ skill.type.label }}{% if skill.power > 0 %} · puissance {{ skill.power }}{% endif %} · recharge {{ skill.cooldown }} s</small>
+                            {% if not unlocked %}<em>Se débloque au niveau {{ skill.requiredLevel }}</em>{% elseif skill.code in skillBar %}<em>Dans la barre</em>{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </section>
         </div>
     </section>
 {% endblock %}

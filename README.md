@@ -116,6 +116,18 @@ await fetch('/api/parties/1/objets/ramasser', {
 });
 ```
 
+
+Autres routes (même protection) :
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| POST | `/api/parties/{id}/objets/{ligne}/utiliser` | utilise un consommable (soin plafonné à la santé max) |
+| POST | `/api/parties/{id}/objets/{ligne}/equiper` | équipe l'objet (libère l'emplacement) ou le retire |
+| POST | `/api/parties/{id}/competences/barre` | `{"slots": ["arcane_bolt", null, …]}` : 6 emplacements, compétences de la classe déjà débloquées |
+
+La sauvegarde accepte aussi `"health"` (ramené entre 0 et la santé maximale). Le chargement renvoie `skills`
+(compétences de la classe avec `unlocked`) et `skillBar`.
+
 ## Front-end (animations et portail 3D)
 
 - `assets/js/portal.js` : source du portail 3D (Three.js). Le site charge la version compilée `public/js/portal.bundle.js`.
@@ -137,6 +149,58 @@ La page Symfony affiche seulement le canvas ; le jeu dialogue ensuite avec l'API
 2. le joueur explore le village de nuit et le chemin de la forêt jusqu'à la ruine (ZQSD ou flèches, Maj pour courir, souris pour la caméra) ;
 3. devant sa porte, `E` ramasse le **pendentif gravé** → `POST /objets/ramasser` (la quête avance, l'indice est révélé) ;
 4. la position et la zone (`village`, `forest_path`, `ruin`) sont sauvegardées toutes les 30 s, à la pause (`Échap`) et en quittant → `POST /sauvegarde`.
+
+### Compétences, grimoire et inventaire
+
+- Entité `Skill` (7 compétences par classe, débloquées aux niveaux 1, 1, 2, 3, 5, 7 et 10) et barre de 6 emplacements
+  enregistrée sur `GameSave` (colonne JSON `skill_bar`). Service `SkillBook` : export, barre par défaut, validation.
+- En jeu : touches `1` à `6` pour lancer, `P` pour le grimoire (pages qui se tournent, glisser-déposer vers la barre,
+  clic droit sur un emplacement pour le vider), `B` pour l'inventaire (équiper, retirer, utiliser un consommable).
+- Deux **mannequins d'entraînement** près de la place servent de cibles en attendant les monstres.
+
+Après récupération de ces fichiers, mettre la base à jour puis recharger les données :
+
+```bash
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
+php bin/console doctrine:fixtures:load
+```
+
+### Monde ouvert, monstres et butin
+
+- **6 zones** (entité `Zone`) : Village (sûr), Bois de la Lisière (niv. 1-3), Chemin de la forêt (3-6), Collines rocheuses (6-9),
+  Sombrebois (9-12), Ruine oubliée (12-15). Le tracé est dans `assets/js/game/terrain.js` (mêmes codes).
+- **20 types de monstres** (entité `Monster`, rang normal / élite / boss) et environ 200 monstres placés sur la carte,
+  chargés par cases autour du joueur. Squelettes et bandits KayKit, teintés et armés. Deux boss : Brannoc (collines) et le Gardien de la Ruine.
+- **Raretés** (`App\Enum\Rarity`) : commun (gris), peu commun (vert), rare (bleu), épique (mauve), légendaire (jaune),
+  cosmique (noir) et omniversel (galaxie). Elles changent la taille, la couleur, la lueur et les particules de l'arme tenue.
+- **Butin** (`LootService`) : tirage côté serveur ; le niveau et le rang du monstre augmentent la chance des raretés hautes
+  (squelette niv. 1 : 0,85 % de légendaire ; boss de la ruine : 13 % de légendaire et 4 % d'omniversel).
+  Chaque objet trouvé a son niveau et ses bonus (`InventoryItem::rarity`, `itemLevel`, `rolledBonuses`).
+- **Coffres** (`LootChest`) : à la mort d'un monstre, un coffre scintillant apparaît (rayon de lumière pour les objets rares et mieux).
+  `E` l'ouvre ; on prend les objets un par un ou tout d'un coup. Il disparaît une fois vide (ou après 15 minutes).
+- **Progression** : expérience et montée de niveau côté serveur (`AdventureService`, `Character::gainExperience`) ; les compétences
+  se débloquent avec le niveau. Mort du joueur : retour au village.
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| GET | `/api/monde` | zones, monstres et raretés |
+| POST | `/api/parties/{id}/combat/victoire` | `{"monster", "level", "position": {x, z}}` → expérience, niveaux, coffre |
+| POST | `/api/parties/{id}/coffres/{coffre}/prendre` | `{"index": 0}` ou `{"all": true}` |
+
+### Runes (monnaie) et marchand
+
+- **Runes** (`GameSave::runes`) : gagnées sur chaque monstre vaincu (selon son niveau et son rang : ×4 élite, ×25 boss)
+  et en revendant le butin. Icône originale dessinée en SVG (`runeIcon()` dans `assets/js/game/ui/icons.js`).
+- **Marchands** (entités `Merchant` et `MerchantOffer`) : Odile la colporteuse, près de la place du village (`E` pour lui parler).
+  Elle vend potions et équipement de débutant (et quelques pièces peu communes) et rachète le butin à 25 % de sa valeur.
+- **Valeur d'un objet** (`ShopService`) : prix de base × rareté (×1 à ×100) × (1 + 15 % par niveau). Les objets de quête
+  et les objets équipés ne se vendent pas ; les objets épiques et au-delà demandent une confirmation.
+
+| Méthode | Route | Rôle |
+|---|---|---|
+| POST | `/api/parties/{id}/marchands/{code}/acheter` | `{"offer": 3, "quantity": 1}` |
+| POST | `/api/parties/{id}/marchands/{code}/vendre` | `{"entry": 42, "quantity": 1}` |
 
 ### Optimisation : streaming du monde
 

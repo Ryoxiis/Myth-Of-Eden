@@ -61,16 +61,25 @@ export class Player {
         container.addAllToScene();
         const root = container.meshes[0];
         root.parent = this.visual;
+        this.root = root;
+        this.shadows = shadows;
         root.scaling = new Vector3(MODEL_SCALE, MODEL_SCALE, -MODEL_SCALE);
 
         const gear = VISIBLE_GEAR[classCode] ?? [];
+        this.gearMeshes = [];
+        this.meshes = [];
         for (const mesh of root.getChildMeshes(false)) {
             const base = mesh.name.replace(/_primitive\d+$/, '');
-            const keep = BODY_PART.test(base) || gear.includes(base);
+            const isGear = gear.includes(base);
+            const keep = BODY_PART.test(base) || isGear;
             mesh.setEnabled(keep);
             mesh.isPickable = false;
             mesh.receiveShadows = true;
-            if (keep) shadows.addShadowCaster(mesh, false);
+            if (keep) {
+                shadows.addShadowCaster(mesh, false);
+                this.meshes.push(mesh);
+            }
+            if (isGear) this.gearMeshes.push(mesh);
         }
 
         this.animations = {};
@@ -98,13 +107,62 @@ export class Player {
 
     /** Joue une animation ponctuelle (ramasser…) en bloquant le déplacement. */
     playAction(name, duration) {
+        if (this.animations[name] && this.current === this.animations[name]) {
+            this.current.stop();
+            this.current = null;
+        }
         const group = this.play(name, false);
         this.actionTime = duration ?? (group ? (group.to - group.from) / 60 : 1);
         this.current = group;
     }
 
+    /** Affiche ou cache l'arme tenue (selon ce qui est équipé dans l'inventaire). */
+    setWeaponVisible(visible) {
+        for (const mesh of this.gearMeshes) mesh.setEnabled(visible);
+    }
+
+    /** Os d'attache des mains (r = droite, l = gauche) pour y fixer armes et boucliers. */
+    handslot(side) {
+        return this.root.getDescendants(false, (node) => node.name === `handslot.${side}`)[0] ?? null;
+    }
+
+    /** Tremblement de caméra (intensité en mètres), amorti rapidement. */
+    shake(intensity) {
+        this.shakeAmount = Math.max(this.shakeAmount ?? 0, intensity);
+    }
+
+    /** Durée d'une animation en secondes. */
+    animationLength(name) {
+        const group = this.animations[name];
+        return group ? (group.to - group.from) / 60 : 1;
+    }
+
+    /** Direction visée : l'avant de la caméra, à plat. */
+    aimDirection() {
+        const alpha = this.camera.alpha;
+        return new Vector3(-Math.cos(alpha), 0, -Math.sin(alpha)).normalize();
+    }
+
+    /** Bond rapide dans une direction (roulade, charge), en respectant les collisions. */
+    dash(direction, distance, duration = 0.28) {
+        this.dashState = { direction: direction.clone().normalize(), speed: distance / duration, time: duration };
+    }
+
+    /** Discrétion : le personnage devient à demi transparent pendant `seconds`. */
+    setStealth(seconds) {
+        this.stealthUntil = performance.now() + seconds * 1000;
+        for (const mesh of this.meshes) mesh.visibility = 0.45;
+    }
+
+    /** Pose le personnage sur le relief (groundAt est fourni par le terrain). */
+    stickToGround() {
+        const p = this.body.position;
+        p.y = this.groundAt ? this.groundAt(p.x, p.z) : 0;
+    }
+
     spawn(position, rotationY) {
         this.body.position.set(position.x, 0, position.z);
+        this.stickToGround();
         this.visual.rotation.y = rotationY;
         // Caméra placée derrière le personnage.
         this.camera.alpha = Math.atan2(-Math.cos(rotationY), -Math.sin(rotationY));
@@ -188,6 +246,19 @@ export class Player {
         const camera = this.camera;
         let moved = false;
 
+        if (this.dashState && this.dashState.time > 0) {
+            const step = Math.min(dt, this.dashState.time);
+            this.dashState.time -= step;
+            const before = this.body.position.clone();
+            this.body.moveWithCollisions(this.dashState.direction.scale(this.dashState.speed * step));
+            this.keepOnWalkableGround(before);
+            this.stickToGround();
+        }
+        if (this.stealthUntil && performance.now() > this.stealthUntil) {
+            this.stealthUntil = 0;
+            for (const mesh of this.meshes) mesh.visibility = 1;
+        }
+
         if (this.actionTime > 0) {
             this.actionTime -= dt;
             if (this.actionTime <= 0) this.play('Idle');
@@ -206,8 +277,8 @@ export class Player {
 
                 const before = this.body.position.clone();
                 this.body.moveWithCollisions(direction.scale(speed * dt));
-                this.body.position.y = 0;
                 this.keepOnWalkableGround(before);
+                this.stickToGround();
                 this.visual.rotation.y = lerpAngle(this.visual.rotation.y, Math.atan2(direction.x, direction.z), TURN_SPEED * dt);
                 this.play(running ? 'Running_A' : 'Walking_A');
                 moved = true;
@@ -219,6 +290,11 @@ export class Player {
         // La caméra suit en douceur, légèrement au-dessus des épaules.
         const target = this.body.position.add(new Vector3(0, 1.45, 0));
         Vector3.LerpToRef(camera.target, target, Math.min(1, dt * 10), camera.target);
+        if (this.shakeAmount > 0.002) {
+            const a = this.shakeAmount;
+            camera.target.addInPlaceFromFloats((Math.random() - 0.5) * a, (Math.random() - 0.5) * a, (Math.random() - 0.5) * a);
+            this.shakeAmount *= Math.pow(0.0015, dt);
+        }
         this.updateCameraArm(dt);
         return moved;
     }

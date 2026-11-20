@@ -2,8 +2,8 @@
  * Terrain du monde : zones praticables (village, chemin de la forêt, clairière de la ruine),
  * collines tout autour, et sol texturé par mélange (« splat map ») herbe / terre / roche.
  *
- * Le joueur marche toujours à l'altitude 0 : les zones praticables sont plates,
- * le relief ne commence qu'au-delà, ce qui forme un vallon le long du chemin.
+ * Monde ouvert : le joueur suit le relief ; les chemins et le village sont aplanis,
+ * des montagnes ferment les bords de la carte.
  */
 import { Color3 } from '@babylonjs/core/Maths/math.color';
 import { CreateGround } from '@babylonjs/core/Meshes/Builders/groundBuilder';
@@ -15,6 +15,8 @@ import { fbm, noise2, smoothstep, clamp } from './noise.js';
 
 export const WORLD_SIZE = 360;
 export const VILLAGE_RADIUS = 30;
+/** Limite praticable : au-delà, les montagnes ferment le monde. */
+export const WORLD_LIMIT = 158;
 const PATH_HALF_WIDTH = 4.5;
 const PATH_START_Z = -20;
 const PATH_END_Z = -150;
@@ -29,7 +31,24 @@ export function pathX(z) {
 /** Centre de la clairière de la ruine, au bout du chemin. */
 export const RUIN_CENTER = { x: pathX(PATH_END_Z - 4), z: PATH_END_Z - 4 };
 
-/** Distance signée à la zone praticable (négative à l'intérieur). */
+/** Routes secondaires (est, ouest, sud) : polylignes [x, z]. */
+const ROADS = [
+    [[26, 2], [60, 10], [95, 4], [130, 16], [150, 12]],
+    [[-26, -2], [-60, -14], [-95, -6], [-130, -20], [-150, -16]],
+    [[2, 26], [-6, 60], [8, 100], [0, 150]],
+];
+
+function distanceToSegment(x, z, [ax, az], [bx, bz]) {
+    const dx = bx - ax;
+    const dz = bz - az;
+    const t = clamp(((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz), 0, 1);
+    return Math.hypot(x - (ax + dx * t), z - (az + dz * t));
+}
+
+/**
+ * Distance au « terrain dégagé » : village, chemins, routes et clairière de la ruine (négative à l'intérieur).
+ * Sert à aplanir le sol et à laisser ces endroits libres d'arbres.
+ */
 export function walkableDistance(x, z) {
     const village = Math.hypot(x, z) - VILLAGE_RADIUS;
     let path = Infinity;
@@ -37,28 +56,39 @@ export function walkableDistance(x, z) {
         path = Math.abs(x - pathX(z)) - PATH_HALF_WIDTH;
     }
     const ruin = Math.hypot(x - RUIN_CENTER.x, z - RUIN_CENTER.z) - RUIN_RADIUS;
-    return Math.min(village, path, ruin);
+    let road = Infinity;
+    for (const line of ROADS) {
+        for (let i = 0; i < line.length - 1; i += 1) {
+            road = Math.min(road, distanceToSegment(x, z, line[i], line[i + 1]) - 3);
+        }
+    }
+    return Math.min(village, path, ruin, road);
 }
 
+/** Monde ouvert : on peut aller partout, sauf dans les montagnes de la bordure. */
 export function isWalkable(x, z, margin = 0.4) {
-    return walkableDistance(x, z) < -margin;
+    return Math.max(Math.abs(x), Math.abs(z)) < WORLD_LIMIT - margin;
 }
 
-/** Nom de la zone (utilisé pour la sauvegarde et l'interface). */
+/** Code de la zone (mêmes codes que les zones Symfony) : sert au niveau des monstres et à la sauvegarde. */
 export function zoneAt(x, z) {
-    if (Math.hypot(x - RUIN_CENTER.x, z - RUIN_CENTER.z) < RUIN_RADIUS + 2) return 'ruin';
-    if (Math.hypot(x, z) < VILLAGE_RADIUS + 1) return 'village';
-    return 'forest_path';
+    if (Math.hypot(x, z) < VILLAGE_RADIUS + 2) return 'village';
+    if (Math.hypot(x - RUIN_CENTER.x, z - RUIN_CENTER.z) < RUIN_RADIUS + 9) return 'ruine';
+    if (z < -26 && z > PATH_END_Z + 10 && Math.abs(x - pathX(z)) < 26) return 'chemin';
+    if (x > 50) return 'collines';
+    if (x < -50) return 'sombrebois';
+    return 'lisiere';
 }
 
-/** Altitude du sol : 0 dans les zones praticables, collines au-delà. */
+/** Altitude du sol : vallons doux partout, plat sur les chemins, montagnes à la bordure. */
 export function heightAt(x, z) {
     const d = walkableDistance(x, z);
-    if (d <= 1) return 0;
-    const rise = smoothstep(1, 24, d);
-    const hills = 2.5 + fbm(x * 0.018 + 7, z * 0.018 - 3) * 11;
-    const bumps = (noise2(x * 0.11, z * 0.11) - 0.5) * 1.6;
-    return rise * (hills + bumps * rise);
+    const flatten = smoothstep(1, 16, d);
+    const hillsAmplitude = x > 50 ? 13 : x < -50 ? 6 : 7;
+    const rolling = (fbm(x * 0.012 + 7, z * 0.012 - 3) - 0.42) * hillsAmplitude + (noise2(x * 0.06, z * 0.06) - 0.5) * 1.2;
+    const edge = Math.max(Math.abs(x), Math.abs(z));
+    const mountains = smoothstep(WORLD_LIMIT - 8, WORLD_SIZE / 2 - 2, edge) * (16 + fbm(x * 0.03, z * 0.03) * 16);
+    return Math.max(-1.5, rolling * flatten) + mountains;
 }
 
 /** Chemins de terre : polylignes [x, z] et largeur. Partagé avec la génération de la carte. */
@@ -71,6 +101,7 @@ export function dirtPaths() {
         { points: [[0, 0], [-6, -6], [-12, -12]], width: 2.4 },
         { points: [[0, 0], [4, -6], [7, -10.5]], width: 2.4 },
         { points: forest, width: 3.4 },
+        ...ROADS.map((points) => ({ points: [[0, 0], ...points], width: 3 })),
     ];
 }
 
@@ -97,9 +128,12 @@ export class Terrain {
             const macro = 0.78 + fbm(x * 0.05 + 11, z * 0.05 + 5, 3) * 0.38;
             const hillShade = 1 - smoothstep(0, 14, h) * 0.25;
             const tone = macro * hillShade;
-            colors[c] = tone * 0.98;
-            colors[c + 1] = tone;
-            colors[c + 2] = tone * 0.94;
+            // Teinte des régions : Sombrebois froid et sombre à l'ouest, collines sèches à l'est.
+            const west = smoothstep(-40, -70, x);
+            const east = smoothstep(40, 70, x);
+            colors[c] = tone * (0.98 - west * 0.35 + east * 0.08);
+            colors[c + 1] = tone * (1 - west * 0.25 - east * 0.02);
+            colors[c + 2] = tone * (0.94 - west * 0.12 - east * 0.18);
             colors[c + 3] = 1;
         }
         ground.updateVerticesData(VertexBuffer.PositionKind, positions);
@@ -187,7 +221,7 @@ export class Terrain {
                 d = clamp(d * (0.75 + grain * 0.6), 0, 1);
                 // Roche : collines et quelques plaques au sol.
                 const h = heightAt(x, z);
-                const slope = smoothstep(2, 9, h) * (0.35 + fbm(x * 0.07, z * 0.07, 3) * 0.9);
+                const slope = smoothstep(4, 12, h) * (0.35 + fbm(x * 0.07, z * 0.07, 3) * 0.9) + (x > 50 ? smoothstep(2, 6, h) * 0.45 : 0);
                 const patches = smoothstep(0.68, 0.8, fbm(x * 0.045 + 40, z * 0.045, 3)) * 0.6;
                 let r = clamp(Math.max(slope, patches), 0, 1) * (1 - d);
                 const g = d;

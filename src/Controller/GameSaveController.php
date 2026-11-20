@@ -10,6 +10,7 @@ use App\Repository\GameSaveRepository;
 use App\Security\Voter\GameSaveVoter;
 use App\Service\GameSaveFactory;
 use App\Service\GameSaveSummary;
+use App\Service\SkillBook;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -96,12 +97,14 @@ final class GameSaveController extends AbstractController
      */
     #[Route('/{id}', name: 'app_game_save_show', requirements: ['id' => '\d+'], methods: ['GET'])]
     #[IsGranted(GameSaveVoter::MANAGE, 'gameSave')]
-    public function show(#[MapEntity(id: 'id')] GameSave $gameSave, GameSaveSummary $summary): Response
+    public function show(#[MapEntity(id: 'id')] GameSave $gameSave, GameSaveSummary $summary, SkillBook $skillBook): Response
     {
         return $this->render('game_save/show.html.twig', [
             'save' => $gameSave,
             'character' => $gameSave->getCharacter(),
             'summary' => $summary->summarize($gameSave),
+            'skills' => $skillBook->skillsFor($gameSave),
+            'skillBar' => $skillBook->barFor($gameSave),
         ]);
     }
 

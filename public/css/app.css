@@ -1517,3 +1517,19 @@ html.from-portal .page-banner .hero-scene {
     font-weight: 900;
     color: var(--accent);
 }
+
+/* --- Fiche : grimoire (compétences de la classe) --------------------------- */
+.dash-skills { margin-top: 3rem; padding-top: 2rem; border-top: 1px solid var(--line); }
+.dash-skills__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.5rem 2rem; margin-bottom: 1.25rem; }
+.dash-skills__head h2 { margin: 0; }
+.dash-skills__head p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+.dash-skills kbd { padding: 0.05em 0.45em; border: 1px solid var(--line-strong); border-radius: 4px; font-size: 0.8em; }
+.skill-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 0.8rem; margin: 0; padding: 0; list-style: none; }
+.skill-card { position: relative; display: grid; gap: 0.25rem; padding: 1rem 1.1rem; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.skill-card b { font-family: var(--font-title); font-size: 1.02rem; }
+.skill-card small { color: var(--muted); }
+.skill-card em { color: var(--gold-light); font-size: 0.8rem; font-style: normal; }
+.skill-card__level { position: absolute; top: 0.8rem; right: 0.9rem; color: var(--faint); font-size: 0.75rem; }
+.skill-card.is-locked { opacity: 0.55; }
+.skill-card.is-locked em { color: var(--faint); }
+.skill-card.is-equipped { border-color: rgba(204, 153, 51, 0.5); }
