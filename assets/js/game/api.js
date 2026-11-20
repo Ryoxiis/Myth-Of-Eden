@@ -29,7 +29,9 @@ export class GameApi {
         }
 
         if (!response.ok || data === null) {
-            const error = new Error(data?.error ?? `Erreur serveur (${response.status}).`);
+            const expired = response.redirected && response.url.includes('/connexion');
+            const message = data?.error ?? (expired ? 'Session expirée, reconnecte-toi.' : `Erreur serveur (${response.status}).`);
+            const error = new Error(message);
             error.status = response.status;
             throw error;
         }

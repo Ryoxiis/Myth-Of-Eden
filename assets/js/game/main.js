@@ -752,7 +752,7 @@ function savePayload() {
     const { x, z } = game.player.position;
     let degrees = (game.player.rotationY * 180 / Math.PI) % 360;
     if (degrees < 0) degrees += 360;
-    const playedSeconds = Math.min(3600, Math.floor(game.unsavedSeconds));
+    const playedSeconds = Math.max(0, Math.min(3600, Math.floor(game.unsavedSeconds)));
     return {
         zone: game.zone,
         position: { x: +x.toFixed(2), y: 0, z: +z.toFixed(2), rotationY: +degrees.toFixed(1) },
@@ -761,17 +761,30 @@ function savePayload() {
     };
 }
 
-async function save({ silent = false, keepalive = false } = {}) {
+let saveChain = Promise.resolve(true);
+
+/**
+ * Sauvegarde la partie. Les appels sont mis en file : deux sauvegardes simultanées
+ * (pause puis « Sauvegarder et quitter ») enverraient sinon le même temps de jeu deux fois.
+ */
+function save(options = {}) {
+    if (options.keepalive) return saveNow(options); // fermeture de page : pas le temps d'attendre la file
+    saveChain = saveChain.then(() => saveNow(options), () => saveNow(options));
+    return saveChain;
+}
+
+async function saveNow({ silent = false, keepalive = false } = {}) {
     game.sinceSave = 0;
     const payload = savePayload();
     try {
         await api.save(payload, { keepalive });
-        game.unsavedSeconds -= payload.playedSeconds;
+        game.unsavedSeconds = Math.max(0, game.unsavedSeconds - payload.playedSeconds);
         game.skills.healthDirty = false;
         if (!silent) hud.setPauseStatus('Partie sauvegardée.');
         hud.showSaved();
         return true;
     } catch (error) {
+        console.error('[sauvegarde]', error.status ?? '', error.message, payload);
         if (!silent) hud.setPauseStatus(`Échec de la sauvegarde : ${error.message}`);
         else hud.showSaved('Sauvegarde impossible');
         return false;
@@ -852,18 +865,38 @@ function bindControls() {
         applyQuality(event.target.value);
         hud.setPauseStatus(`Qualité graphique : ${QUALITY[event.target.value].label}.`);
     });
+    let quitWithoutSaving = false;
     hud.el.save.addEventListener('click', async () => {
         hud.el.save.disabled = true;
         hud.setPauseStatus('Sauvegarde…');
-        await save();
+        if (await save() && quitWithoutSaving) {
+            quitWithoutSaving = false;
+            hud.el.quit.textContent = 'Sauvegarder et quitter';
+        }
         hud.el.save.disabled = false;
     });
     hud.el.quit.addEventListener('click', async () => {
+        if (quitWithoutSaving) {
+            leaveGame();
+            return;
+        }
         hud.el.quit.disabled = true;
         hud.setPauseStatus('Sauvegarde…');
-        await save();
-        window.location.href = root.dataset.exit;
+        const saved = await save();
+        hud.el.quit.disabled = false;
+        if (saved) {
+            leaveGame();
+            return;
+        }
+        // On ne quitte pas en silence : le joueur choisit de réessayer ou de partir quand même.
+        quitWithoutSaving = true;
+        hud.el.quit.textContent = 'Quitter sans sauvegarder';
     });
+
+    function leaveGame() {
+        game.running = false; // pas de seconde sauvegarde au déchargement de la page
+        window.location.href = root.dataset.exit;
+    }
 
     window.addEventListener('pagehide', () => {
         if (game.running) save({ silent: true, keepalive: true });
